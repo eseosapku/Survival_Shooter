@@ -1,0 +1,29 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6effb3782aaa58446963da737a9c85cc, type: 3}
+  m_Name: WeaponStats
+  m_EditorClassIdentifier: Assembly-CSharp::Ricochet.Data.WeaponStats
+  boltSpeed: 8
+  boltLifetime: 2.5
+  maxBounces: 3
+  boltRadius: 0.03
+  shotsPerSecond: 5
+  spreadAngle: 8
+  baseSpreadTier: 1
+  heatPerShot: 0.12
+  coolPerSecond: 0.35
+  overheatLockTime: 1.5
+  ricochetMultipliers:
+  - 1
+  - 1.5
+  - 2
+  - 3
