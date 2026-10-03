@@ -12,14 +12,18 @@ namespace Ricochet.Core
     {
         static readonly List<RaycastResult> s_Results = new List<RaycastResult>();
         static PointerEventData s_Pointer;
+        static EventSystem s_PointerOwner;
 
         public static bool IsOverUI(Vector2 screenPosition)
         {
             var es = EventSystem.current;
             if (es == null) return false;
 
-            if (s_Pointer == null || s_Pointer.eventSystem != es)
+            if (s_Pointer == null || s_PointerOwner != es)
+            {
                 s_Pointer = new PointerEventData(es);
+                s_PointerOwner = es;
+            }
 
             s_Pointer.position = screenPosition;
             s_Results.Clear();
