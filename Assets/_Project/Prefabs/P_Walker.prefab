@@ -550,8 +550,7 @@ GameObject:
   m_Component:
   - component: {fileID: 7075281736193181393}
   - component: {fileID: 2828450776681553041}
-  - component: {fileID: 109170215288339284}
-  - component: {fileID: 6689269573987445923}
+  - component: {fileID: 298982799136139346}
   m_Layer: 12
   m_Name: P_Walker
   m_TagString: Untagged
@@ -598,7 +597,7 @@ CapsuleCollider:
   m_Height: 1.65
   m_Direction: 1
   m_Center: {x: 0, y: 0.825, z: 0}
---- !u!114 &109170215288339284
+--- !u!114 &298982799136139346
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -607,32 +606,15 @@ MonoBehaviour:
   m_GameObject: {fileID: 6258668356154428396}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 2165c457cdbd90f40925f7ae5d6536fa, type: 3}
+  m_Script: {fileID: 11500000, guid: f8d36f3f7e98e2c4abfca83c56aca714, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::Ricochet.Enemies.HitFlash
-  flashDuration: 0.12
-  flashColor: {r: 4, g: 4, b: 4, a: 1}
---- !u!114 &6689269573987445923
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 6258668356154428396}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 6b6d6bb30211ae44688482f32635203a, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::Ricochet.Enemies.WalkerEnemy
-  stats: {fileID: 11400000, guid: 75cc1ee293da8de488f1cb850a903fc0, type: 2}
+  m_EditorClassIdentifier: Assembly-CSharp::Ricochet.Enemy
+  type: 0
   model: {fileID: 7685359093093659683}
   hitCollider: {fileID: 2828450776681553041}
+  mouth: {fileID: 0}
+  mouthGlow: {fileID: 0}
   deathColor: {r: 0.6, g: 0.9, b: 0.5, a: 1}
-  riseDuration: 0.6
-  deathDuration: 0.45
-  knockbackDistance: 0.08
-  turnSpeed: 8
-  windUp: 0.3
 --- !u!1 &6835239086166210819
 GameObject:
   m_ObjectHideFlags: 0

@@ -10,7 +10,7 @@ GameObject:
   m_Component:
   - component: {fileID: 2616549116633424712}
   - component: {fileID: 5473899420465443783}
-  - component: {fileID: 528630077124720512}
+  - component: {fileID: 2683809899552528456}
   m_Layer: 15
   m_Name: P_AcidGlob
   m_TagString: Untagged
@@ -154,7 +154,7 @@ TrailRenderer:
   m_Autodestruct: 0
   m_Emitting: 1
   m_ApplyActiveColorSpace: 1
---- !u!114 &528630077124720512
+--- !u!114 &2683809899552528456
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -163,16 +163,15 @@ MonoBehaviour:
   m_GameObject: {fileID: 4696696412809213658}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 634659f6fcad9f84e8a1962377240dbc, type: 3}
+  m_Script: {fileID: 11500000, guid: 43f2125669ffdad44b5a918017bc545f, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::Ricochet.Enemies.AcidGlob
+  m_EditorClassIdentifier: Assembly-CSharp::Ricochet.Projectile
+  team: 1
   hitMask:
     serializedVersion: 2
     m_Bits: 9984
-  radius: 0.06
-  lifetime: 4
-  splatColor: {r: 0.6, g: 1, b: 0.1, a: 1}
   trail: {fileID: 5473899420465443783}
+  impactColor: {r: 0.6, g: 1, b: 0.15, a: 1}
 --- !u!1 &4884011210086303204
 GameObject:
   m_ObjectHideFlags: 0

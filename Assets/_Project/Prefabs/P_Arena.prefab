@@ -529,7 +529,6 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 5403609417004827878}
-  - component: {fileID: 3275347949671518192}
   m_Layer: 0
   m_Name: P_Arena
   m_TagString: Untagged
@@ -553,24 +552,6 @@ Transform:
   - {fileID: 5112728149061373448}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &3275347949671518192
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 8006268765853241967}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: c309eeec38a34e64aa36a262cfcbd89d, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::Ricochet.AR.ArenaContext
-  beacon: {fileID: 2972256447388309369}
-  spinner: {fileID: 8560974497515789284}
-  fallbackRadius: 4
-  floorMask:
-    serializedVersion: 2
-    m_Bits: 256
 --- !u!1 &8056419268590904572
 GameObject:
   m_ObjectHideFlags: 0

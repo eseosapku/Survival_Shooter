@@ -865,8 +865,7 @@ GameObject:
   m_Component:
   - component: {fileID: 1731539481714367443}
   - component: {fileID: 1951858191185122462}
-  - component: {fileID: 6695597123446631126}
-  - component: {fileID: 5634796607638441621}
+  - component: {fileID: 2145142897539723133}
   m_Layer: 12
   m_Name: P_Spitter
   m_TagString: Untagged
@@ -913,7 +912,7 @@ CapsuleCollider:
   m_Height: 1.4
   m_Direction: 1
   m_Center: {x: 0, y: 0.7, z: 0}
---- !u!114 &6695597123446631126
+--- !u!114 &2145142897539723133
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -922,33 +921,15 @@ MonoBehaviour:
   m_GameObject: {fileID: 7412625810549901635}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 2165c457cdbd90f40925f7ae5d6536fa, type: 3}
+  m_Script: {fileID: 11500000, guid: f8d36f3f7e98e2c4abfca83c56aca714, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::Ricochet.Enemies.HitFlash
-  flashDuration: 0.12
-  flashColor: {r: 4, g: 4, b: 4, a: 1}
---- !u!114 &5634796607638441621
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 7412625810549901635}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: fcb2c9e3a1b3ca149b9cbcc570493cd7, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::Ricochet.Enemies.SpitterEnemy
-  stats: {fileID: 11400000, guid: 663e80a2badf6c444a4ca8c8c1cdd65c, type: 2}
+  m_EditorClassIdentifier: Assembly-CSharp::Ricochet.Enemy
+  type: 1
   model: {fileID: 8275207229508022472}
   hitCollider: {fileID: 1951858191185122462}
-  deathColor: {r: 0.6, g: 1, b: 0.15, a: 1}
-  riseDuration: 0.6
-  deathDuration: 0.45
-  knockbackDistance: 0.08
-  turnSpeed: 8
   mouth: {fileID: 2483270003663489736}
   mouthGlow: {fileID: 327176770169483792}
+  deathColor: {r: 0.6, g: 1, b: 0.15, a: 1}
 --- !u!1 &7768908246877866064
 GameObject:
   m_ObjectHideFlags: 0

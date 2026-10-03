@@ -3,13 +3,16 @@
 **Author:** Eseosa Kay-Uwagboe Pascal · **Engine:** Unity 6000.4.5f1, AR Foundation 6.4, ARCore, URP · **Platform:** Android (ARM64, IL2CPP)
 
 ## 1. Overview
-RICOCHET is a timed first-person AR survival shooter.
+RICOCHET is a timed first-person **augmented reality** survival shooter played in the player's real room.
 
-1. The player scans their floor and taps to place a beacon. It is anchored to the detected plane, and only one can ever be placed.
-2. Zombies rise from the floor and walk toward the player.
-3. The player's laser bolts reflect off real walls (AR vertical planes) and placeable mirrors. Each bounce raises the score multiplier.
-4. The round ends with SURVIVED (the timer reaches 0) or OVERRUN (health reaches 0).
-5. Each run is saved to a local leaderboard that keeps the latest 5 sessions.
+1. The phone scans the floor. The detected floor is shown with a custom texture carrying the author's name.
+2. The player taps to place a beacon, which is anchored to the real floor. Only one can ever be placed.
+3. Zombies rise out of the real floor and walk toward the player.
+4. Laser bolts reflect off real walls (AR vertical planes) and placeable mirrors. Each bounce raises the score multiplier.
+5. The round ends with SURVIVED (the timer reaches 0) or OVERRUN (health reaches 0).
+6. Each run is saved to a local leaderboard that keeps the latest 5 sessions.
+
+The project uses **10 scripts**. Each component or ScriptableObject has its own file, as Unity requires. Supporting logic is written as plain C# classes inside the related file.
 
 ## 2. Architecture
 
@@ -23,7 +26,7 @@ classDiagram
         +EndRound()
     }
     class GameStateMachine {
-        +ChangeState(IGameState)
+        +ChangeState()
         +StateChanged
     }
     class IGameState {
@@ -42,21 +45,27 @@ classDiagram
     IGameState <|.. GameOverState
     IGameState <|.. LeaderboardState
 
+    GameManager --> EnemySpawner
+    EnemySpawner --> EnemyFactory
+    EnemyFactory ..> Enemy : Create() via ObjectPool
     class Enemy {
-        <<abstract>>
-        #TickBehaviour()
-        #Attack()
         +TakeDamage()
     }
-    Enemy <|-- WalkerEnemy
-    Enemy <|-- SpitterEnemy
-    EnemyFactory ..> Enemy : creates (pooled)
-    EnemySpawner --> EnemyFactory
+    class EnemyAI {
+        <<abstract>>
+        +Tick()
+        #Attack()
+    }
+    Enemy --> EnemyAI
+    EnemyAI <|-- WalkerAI
+    EnemyAI <|-- SpitterAI
 
+    GameManager --> CardSystem
     class AbilityCard {
         <<abstract>>
         +Activate(PlayerContext)
     }
+    CardSystem --> AbilityCard
     AbilityCard <|-- MultiShotCard
     AbilityCard <|-- MirrorCard
     AbilityCard <|-- PrismCard
@@ -68,59 +77,65 @@ classDiagram
         +Show()
         +Hide()
     }
+    UIManager --> UIPanel
     UIPanel <|-- MainMenuPanel
     UIPanel <|-- HUDPanel
     UIPanel <|-- EndPanel
     UIPanel <|-- LeaderboardPanel
-    UIManager --> UIPanel
-    UIManager ..> GameStateMachine : observes StateChanged
+    UIManager ..> GameStateMachine : observes
 
-    class ObjectPool~T~ {
-        +Get()
-        +Release()
-        +ReleaseAll()
+    class IDamageable {
+        <<interface>>
     }
-    LaserBlaster --> ObjectPool~T~ : LaserBolt x40
-    EnemyFactory --> ObjectPool~T~ : Walker/Spitter x12, AcidGlob x20
+    IDamageable <|.. Player
+    IDamageable <|.. Enemy
+    Player --> Projectile : pooled bolts
+    GameManager --> ARController
+    GameManager ..> GameConfig : reads
 ```
 
 Flow: **MainMenu → Scanning** (first time only) **→ Countdown → Playing ⇄ Paused → GameOver → MainMenu / Countdown**.
 
 ## 3. OOP
-
-| Principle | How it is used |
-|---|---|
-| **Encapsulation** | Tuning values are `private [SerializeField]` fields exposed through read-only properties. State changes only happen through methods (`TakeDamage`, `Heal`, `AddPoints`). |
-| **Abstraction** | `Enemy`, `AbilityCard`, `UIPanel`, `PlacedGadget` (abstract classes); `IGameState`, `IPoolable`, `IDamageable` (interfaces). |
-| **Inheritance** | `WalkerEnemy`/`SpitterEnemy : Enemy`; the 5 cards `: AbilityCard`; 7 panels `: UIPanel`; `Mirror`/`Prism : PlacedGadget`. |
-| **Polymorphism** | `Enemy.TickBehaviour()`/`Attack()` overrides (melee vs ranged); `AbilityCard.Activate()`; `IDamageable.TakeDamage()` is called the same way on the player and on enemies; the 7 state implementations. |
+- **Encapsulation:** private serialized fields exposed through read-only properties. State changes only through methods.
+- **Abstraction:**
+  - abstract classes: `EnemyAI`, `AbilityCard`, `UIPanel`, `GameStateBase`
+  - interfaces: `IGameState`, `IPoolable`, `IDamageable`
+- **Inheritance:**
+  - `WalkerAI`/`SpitterAI : EnemyAI`
+  - 5 cards `: AbilityCard`
+  - 7 panels `: UIPanel`
+  - 7 states `: GameStateBase`
+- **Polymorphism:**
+  - `Enemy` calls `EnemyAI.Tick()`: melee vs ranged behaviour.
+  - `CardSystem` calls `AbilityCard.Activate()`.
+  - `IDamageable.TakeDamage()` works the same on the player and on enemies.
+  - The state machine calls `Enter/Tick/Exit` on any state.
 
 ## 4. Design patterns
-
 | Pattern | Implementation | Why |
 |---|---|---|
-| **Object Pool** | `ObjectPool<T>` (see section 5) | No GC spikes or Instantiate cost during play. Required for projectiles. |
-| **Singleton** | `GameManager`, `AudioManager`, `VfxManager` (duplicates destroy themselves) | One global entry point for game commands, sound and effects. |
-| **State** | `GameStateMachine` + `IGameState` | Each phase switches its systems on in Enter and off in Exit, so there are no `if (state == …)` chains. |
-| **Factory** | `EnemyFactory.Create(EnemyType, pos)` | The spawner doesn't know about prefabs or pools. Adding an enemy type only touches the factory. |
-| **Observer** | C# events: `PlayerHealth.HealthChanged/Died`, `ScoreSystem.ScoreChanged/PointsAwarded`, `RoundTimer.TimeChanged`, `GameEvents.EnemyKilled`, `GameStateMachine.StateChanged`, `ARPlacementController.ArenaPlaced` | The UI only listens, so gameplay never references UI. |
-| **Data-driven config** | ScriptableObjects: `DifficultySettings` x3, `EnemyStats` x2, `WeaponStats`, `SoundLibrary` | Changing the difficulty means swapping one asset. |
+| Object Pool | `ObjectPool<T>` | No allocations or Instantiate during play (required for projectiles) |
+| Singleton | `GameManager`, `AudioManager` | One global access point; duplicates destroy themselves |
+| State | `GameStateMachine` + 7 states | Each phase switches its systems on and off cleanly |
+| Factory | `EnemyFactory.Create(type, pos)`, `EnemyAI.Create(type)` | Callers don't know about prefabs or pools |
+| Observer | C# events (health, score, timer, heat, state, arena placed, enemy killed) | UI listens; gameplay never references UI |
+| Data-driven | `GameConfig` ScriptableObject | Difficulty and balance without code changes |
 
 ## 5. Object Pool implementation
-- `ObjectPool<T> where T : Component, IPoolable` creates all instances in its constructor (pre-warm, during `Awake`) under a world-space "Pools" object.
-- **Get(pos, rot):**
+- `ObjectPool<T> where T : Component` creates every instance in its constructor (pre-warm, during `Awake`) under a world-space "Pools" object.
+- **Get(position, rotation):**
   1. Pops an inactive instance.
   2. Positions and activates it.
   3. Adds it to the active list.
-  4. Calls `OnSpawned()`.
+  4. Calls `IPoolable.OnSpawned()`.
 - **Release(item):** calls `OnDespawned()`, deactivates the item and pushes it back. Double releases are ignored.
 - **ReleaseAll()** wipes the board at game end.
-- If a pool is empty it grows by one and logs a warning. `PoolRegistry` shows `active/total, grown` on the pause screen as proof that nothing is instantiated during play.
-- Reset on reuse (`OnSpawned`):
-  - **LaserBolt:** bounce count 0, hit mask restored, can-split flag, lifetime, `TrailRenderer.Clear()`.
-  - **Enemy:** health, rise animation, cooldown, slow effect, knockback, collider, hit flash.
-  - **AcidGlob:** lifetime, trail.
-- Pools and sizes:
+- An empty pool grows by one and logs a warning. `PoolRegistry` shows `active/total, grown` on the pause screen.
+- Reset on reuse:
+  - **Projectile:** bounce count, hit mask, split flag, lifetime, `TrailRenderer.Clear()`.
+  - **Enemy:** health, rise animation, cooldown, slow effect, knockback, collider, hit flash, AI state.
+- Pool sizes:
 
 | Pool | Size |
 |---|---|
@@ -130,33 +145,27 @@ Flow: **MainMenu → Scanning** (first time only) **→ Countdown → Playing �
 | Spitters | 12 |
 | Cards | 2 per type |
 | Mirrors / Prisms | 4 each |
-| Floating score texts | 12 |
-| 3D audio sources | 10 (round-robin) |
+| Floating texts | 12 |
 
 ## 6. Laser ricochet
-1. Each frame a bolt does `Physics.SphereCast(position, r, direction, out hit, speed*dt, mask)`. This is continuous collision, so there is no tunnelling and no Rigidbody.
-2. On a hit with ReflectiveWall or Mirror: `direction = Vector3.Reflect(direction, hit.normal)`, then the bounce count goes up by one (max 3), and the bolt continues with the remaining distance in the same frame.
-3. On a hit with an Enemy: 1 damage, with score multiplier ×1 / ×1.5 / ×2 / ×3 by bounce count.
+1. Each frame a bolt does `Physics.SphereCast(pos, r, dir, out hit, speed*dt, mask)`.
+2. On a wall or mirror it reflects with `dir = Vector3.Reflect(dir, hit.normal)` and the bounce count goes up by one (max 3). It continues moving within the same frame.
+3. On an enemy it deals 1 damage with a score multiplier of ×1 / ×1.5 / ×2 / ×3 depending on bounces.
 
 ## 7. Sound system
-- `AudioManager` owns all AudioSources:
+- `AudioManager` owns all audio sources:
   - 1 music source
   - 1 2D one-shot source
   - 10 pooled 3D sources
-- Enemies and bullets have no AudioSource, which prevents duplicated components.
-- Gameplay calls `AudioManager.Instance.Play(SoundId)` / `PlayAt(SoundId, position)`. The `SoundLibrary` ScriptableObject maps each id to clips, volume, pitch variation and a 2D/3D flag.
+- No AudioSource on enemies or projectiles, so components are never duplicated.
+- Gameplay calls `Play(SoundId)` / `PlayAt(SoundId, position)`. `GameConfig` maps each id to clips, volume, pitch range and a 2D/3D flag.
 
 | Required sound | Trigger |
 |---|---|
-| Player shoot | `LaserBlaster.Fire` |
-| Player death | `PlayerHealth.Died` → `DamageFeedback` |
+| Player shoot | `Player.Fire` |
+| Player death | `Player.TakeDamage` → health reaches 0 |
 | Enemy spawn | `EnemyFactory.Create` (3D) |
-| Enemy shoot | `SpitterEnemy.Attack` (3D) |
-| Enemy damage (melee hits player) | `WalkerEnemy.LandHit` |
+| Enemy shoot | `SpitterAI.Attack` (3D) |
+| Enemy damage (melee) | `WalkerAI.LandHit` |
 
-**Sources:** all clips were procedurally synthesized by `Scripts/Editor/SfxSynth.cs` (oscillators, noise and envelopes), written for this project. They are original work with no third-party licence. *(If any clips are later replaced with Kenney CC0 packs, list them here with links.)*
-
-## 8. AR specifics
-- **Custom plane tracker:** `ARPlaneStyler`. Floors show a texture with the author's full name (tiled every 50 cm) on layer ARFloor. Walls show a neon grid on layer ReflectiveWall, and their MeshCollider reflects lasers.
-- **Placement:** single placement through `ARAnchorManager.AttachAnchor`. After placement, detection switches to vertical only (new floors stop appearing) and the floors are dimmed.
-- **No walls detected?** Mirror cards make the game fully playable anyway, and the HUD shows "WALLS: N".
+**Sources:** all clips were procedurally synthesized for this project. They are original work with no third-party licence.

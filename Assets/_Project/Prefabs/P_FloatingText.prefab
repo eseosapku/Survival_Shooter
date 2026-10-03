@@ -11,7 +11,6 @@ GameObject:
   - component: {fileID: 8938612913586081555}
   - component: {fileID: 7258180236998726601}
   - component: {fileID: 5236447184412015337}
-  - component: {fileID: 5914444097346821506}
   m_Layer: 0
   m_Name: P_FloatingText
   m_TagString: Untagged
@@ -138,18 +137,3 @@ MonoBehaviour:
   m_hasFontAssetChanged: 0
   m_baseMaterial: {fileID: 0}
   m_maskOffset: {x: 0, y: 0, z: 0, w: 0}
---- !u!114 &5914444097346821506
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 4524467707081103964}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: e39b3d5a12fef334dbda1616b14a2223, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::Ricochet.UI.FloatingText
-  label: {fileID: 5236447184412015337}
-  duration: 1.1
-  riseMetres: 0.35

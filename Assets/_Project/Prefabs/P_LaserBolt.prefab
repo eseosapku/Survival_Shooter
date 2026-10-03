@@ -100,7 +100,7 @@ GameObject:
   m_Component:
   - component: {fileID: 1333790358135221849}
   - component: {fileID: 6205824755581974993}
-  - component: {fileID: 4095863058602132453}
+  - component: {fileID: 1285664915999598573}
   m_Layer: 14
   m_Name: P_LaserBolt
   m_TagString: Untagged
@@ -244,7 +244,7 @@ TrailRenderer:
   m_Autodestruct: 0
   m_Emitting: 1
   m_ApplyActiveColorSpace: 1
---- !u!114 &4095863058602132453
+--- !u!114 &1285664915999598573
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -253,14 +253,15 @@ MonoBehaviour:
   m_GameObject: {fileID: 2246031034387915255}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: c3942b8a75cdc45449eba3bb6ef4f292, type: 3}
+  m_Script: {fileID: 11500000, guid: 43f2125669ffdad44b5a918017bc545f, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::Ricochet.Weapons.LaserBolt
-  trail: {fileID: 6205824755581974993}
+  m_EditorClassIdentifier: Assembly-CSharp::Ricochet.Projectile
+  team: 0
   hitMask:
     serializedVersion: 2
     m_Bits: 7936
-  sparkColor: {r: 0.3, g: 1, b: 1, a: 1}
+  trail: {fileID: 6205824755581974993}
+  impactColor: {r: 0.2, g: 1, b: 1, a: 1}
 --- !u!1 &7687738198969429727
 GameObject:
   m_ObjectHideFlags: 0

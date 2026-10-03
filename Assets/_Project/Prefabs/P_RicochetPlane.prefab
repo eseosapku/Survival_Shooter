@@ -15,7 +15,6 @@ GameObject:
   - component: {fileID: 190191531546593597}
   - component: {fileID: 8457599082933444934}
   - component: {fileID: 2398138875401602349}
-  - component: {fileID: 6981483723651419134}
   m_Layer: 8
   m_Name: P_RicochetPlane
   m_TagString: Untagged
@@ -255,22 +254,3 @@ MonoBehaviour:
   m_EditorClassIdentifier: Unity.XR.ARFoundation::UnityEngine.XR.ARFoundation.ARPlaneMeshVisualizer
   m_TrackingStateVisibilityThreshold: 1
   m_HideSubsumed: 1
---- !u!114 &6981483723651419134
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 4109816407548361132}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 6d17618d0245e0149964685e1a34dd08, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::Ricochet.AR.ARPlaneStyler
-  floorMaterial: {fileID: 2100000, guid: 8c5e0c8dff9a90e46b8e6289796def5b, type: 2}
-  wallMaterial: {fileID: 2100000, guid: 134f56ace5bdf8e46a5ac4754c50d515, type: 2}
-  floorLineColor: {r: 0.2, g: 1, b: 1, a: 0.9}
-  wallLineColor: {r: 1, g: 0.25, b: 0.9, a: 0.9}
-  dimmedAlpha: 0.25
-  floorLayer: ARFloor
-  wallLayer: ReflectiveWall
