@@ -87,7 +87,7 @@ namespace Ricochet.EditorTools
             var core = Prim(PrimitiveType.Sphere, "Core", visual, new Vector3(0f, 0.22f, 0f), Vector3.one * 0.08f, M("M_BeaconCore"));
             Prim(PrimitiveType.Cylinder, "Beam", visual, new Vector3(0f, 0.5f, 0f), new Vector3(0.025f, 0.5f, 0.025f), M("M_BeaconBeam"));
 
-            Set(ctx, ("beacon", core.transform), ("spinner", spinner), ("fallbackRadius", 2.5f), ("floorMask", Mask("ARFloor")));
+            Set(ctx, ("beacon", core.transform), ("spinner", spinner), ("fallbackRadius", 4f), ("floorMask", Mask("ARFloor")));
             SavePrefab<Transform>(go, "P_Arena");
         }
 

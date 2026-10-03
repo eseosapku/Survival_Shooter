@@ -11,7 +11,7 @@ namespace Ricochet.AR
     {
         [SerializeField] Transform beacon;
         [SerializeField] Transform spinner;
-        [SerializeField, Min(0.5f)] float fallbackRadius = 2.5f;
+        [SerializeField, Min(0.5f)] float fallbackRadius = 4f;
         [SerializeField] LayerMask floorMask;
 
         public ARPlane FloorPlane { get; private set; }

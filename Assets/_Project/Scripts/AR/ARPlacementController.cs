@@ -88,7 +88,7 @@ namespace Ricochet.AR
 #if UNITY_EDITOR
             // Editor convenience: press B to drop the arena in front of the camera without a detected plane.
             var kb = UnityEngine.InputSystem.Keyboard.current;
-            if (kb != null && kb.bKey.wasPressedThisFrame) PlaceDebugArena();
+            if (kb != null && kb.bKey.wasPressedThisFrame) DebugPlaceArena();
 #endif
         }
 
@@ -148,7 +148,8 @@ namespace Ricochet.AR
         }
 
 #if UNITY_EDITOR
-        void PlaceDebugArena()
+        /// <summary>Editor-only: drops the arena in front of the camera without a detected plane.</summary>
+        public void DebugPlaceArena()
         {
             if (HasArena) return;
             Vector3 fwd = arCamera.transform.forward;

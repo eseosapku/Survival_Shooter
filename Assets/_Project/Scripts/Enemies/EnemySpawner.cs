@@ -75,21 +75,24 @@ namespace Ricochet.Enemies
                 if (_arena.IsOnFloor(candidate)) return candidate;
             }
 
-            // Fallback: a point around the beacon, as far from the player as we can find.
-            Vector3 best = _arena.Center;
+            // Fallback (floor plane too small / not detected): a point within the radius around the beacon
+            // that still respects the minimum distance from the player, so nothing spawns in the player's face.
+            Vector3 best = Vector3.zero;
             float bestDist = -1f;
-            for (int i = 0; i < 8; i++)
+            for (int i = 0; i < attempts; i++)
             {
-                Vector2 r = Random.insideUnitCircle.normalized * Random.Range(_arena.FallbackRadius * 0.5f, _arena.FallbackRadius);
-                Vector3 c = _arena.Center + new Vector3(r.x, 0f, r.y);
-                float d = Vector3.Distance(c, playerFloor);
-                if (d > bestDist)
+                float angle = facing + Random.Range(-preferredHalfAngle, preferredHalfAngle);
+                Vector3 c = playerFloor + Quaternion.Euler(0f, angle, 0f) * Vector3.forward * Random.Range(minDistance, maxDistance);
+                if (_arena.IsWithinFallback(c)) return _arena.ProjectToFloor(c);
+
+                float d = Vector3.Distance(c, _arena.Center);
+                if (bestDist < 0f || d < bestDist)
                 {
                     bestDist = d;
                     best = c;
                 }
-                if (d >= minDistance * 0.6f) break;
             }
+            // Last resort: the candidate closest to the beacon (still 2.5-4 m from the player).
             return _arena.ProjectToFloor(best);
         }
     }

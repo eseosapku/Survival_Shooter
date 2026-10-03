@@ -567,7 +567,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Ricochet.AR.ArenaContext
   beacon: {fileID: 2972256447388309369}
   spinner: {fileID: 8560974497515789284}
-  fallbackRadius: 2.5
+  fallbackRadius: 4
   floorMask:
     serializedVersion: 2
     m_Bits: 256
