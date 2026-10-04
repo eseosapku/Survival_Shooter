@@ -533,7 +533,7 @@ struct IEnumerator_t7B609C2FFA6EB5167D9C62A0C32A21DE2F666DAA;
 struct IEventHandler_tB1627CA1B7729F3E714572E69A79C91A1578C9A3;
 struct IPanel_tAD0F3807B6DE2ECA557380E7DB5F3A179BE5A7A5;
 struct IPool_t4E088811975DDD471517CAE33974362BDA9785B7;
-struct IPoolStats_tCE5E64999C853437328690E15110187D36966889;
+struct IPoolInfo_tFD8A30A7F6221394D9EFE864C8196D5F45E047E7;
 struct IPoolable_t2C5ED5DE9F5BDAC95D1DF455E1F86A8555AC8A1C;
 struct IUIInteractor_t5E87AB04096E6A5D1AF1D291E2096599065E94EA;
 struct IXRBodyTransformation_t841A889B5DEF41E54236686750DC7BDC9242FE6C;
@@ -583,17 +583,17 @@ IL2CPP_EXTERN_C RuntimeClass* IPoolable_t2C5ED5DE9F5BDAC95D1DF455E1F86A8555AC8A1
 IL2CPP_EXTERN_C RuntimeClass* Math_tEB65DE7CA8B083C412C969C92981C030865486CE_il2cpp_TypeInfo_var;
 IL2CPP_EXTERN_C RuntimeClass* Object_tC12DECB6760A7F2CBF65D9DCF18D044C2D97152C_il2cpp_TypeInfo_var;
 IL2CPP_EXTERN_C RuntimeClass* PoolManager_tCD126423B2687267A0B23174E015C80B67346591_il2cpp_TypeInfo_var;
-IL2CPP_EXTERN_C RuntimeClass* PoolRegistry_tAD08465CDD7874903CAC1C38FE2A10287BC4AEC4_il2cpp_TypeInfo_var;
+IL2CPP_EXTERN_C RuntimeClass* Pools_t6CA45AD4D45A1774BC1FD00280438B42E94F3928_il2cpp_TypeInfo_var;
 IL2CPP_EXTERN_C RuntimeClass* VolumeParameter_t95994C89644D2CC4C11F666571492420D16BED72_il2cpp_TypeInfo_var;
 IL2CPP_EXTERN_C String_t* _stringLiteral12D34C4D5361DBE1804B6F49EDED3C800B442095;
-IL2CPP_EXTERN_C String_t* _stringLiteral25857502A182940B84B0CBF6AB7079B7AE481896;
+IL2CPP_EXTERN_C String_t* _stringLiteral13C8C4777681DDCCF3BEA90DACA863BBF655AE50;
 IL2CPP_EXTERN_C String_t* _stringLiteral2B6D6F48C27C60C3B55391AB377D9DC8F5639AA1;
 IL2CPP_EXTERN_C String_t* _stringLiteral36A671C1B625C9DCE9DC8BF9838E883E2C15399B;
-IL2CPP_EXTERN_C String_t* _stringLiteral60F5AFCC83105FAD09A246F9CA35959D2AE6FF22;
+IL2CPP_EXTERN_C String_t* _stringLiteral3D2880849351A195E740A316AA3222631597FC61;
+IL2CPP_EXTERN_C String_t* _stringLiteral50639CAD49418C7B223CC529395C0E2A3892501C;
 IL2CPP_EXTERN_C String_t* _stringLiteral66F9618FDA792CAB23AF2D7FFB50AB2D3E393DC5;
 IL2CPP_EXTERN_C String_t* _stringLiteral90D481902E4536C7CAECF03F50C5BF454D5968A7;
 IL2CPP_EXTERN_C String_t* _stringLiteralBE7F5FAB856FD44805A1AB74E778E29427AD750F;
-IL2CPP_EXTERN_C String_t* _stringLiteralE49AE09F731F4E0F40AA7F71DA51F8605C2568C3;
 IL2CPP_EXTERN_C String_t* _stringLiteralEC7490104281DA55179FCF6F8D9926283EDF2DFA;
 IL2CPP_EXTERN_C String_t* _stringLiteralF2E9873618CF7CF584BF8C00E6280D6D71245CCD;
 IL2CPP_EXTERN_C const RuntimeMethod* Enumerable_OrderBy_TisFieldInfo_t_TisInt32_t680FF22E76F6EFAD4375103CBBFFA0421349384C_m305093C3E08FA712AA4846984EDB85C0AF6EE5E7_RuntimeMethod_var;
@@ -1007,14 +1007,14 @@ struct ObjectListPool_1_t067A71B748011E806B835953AABC614B590261FD  : public Runt
 };
 struct ObjectPool_1_tA50B57B65E34413AE66CE47788639071A023F756  : public RuntimeObject
 {
-	RuntimeObject* ____prefab;
-	Transform_tB27202C6F4E36D225EE28A13E4D662BF99785DB1* ____parent;
-	Action_1_t6F9EB113EB3F16226AEF811A2744F4111C116C87* ____onCreate;
-	Stack_1_tAD790A47551563636908E21E4F08C54C0C323EB5* ____inactive;
-	List_1_tA239CB83DE5615F348BB0507E45F490F4F7C9A8D* ____active;
+	RuntimeObject* ___prefab;
+	Transform_tB27202C6F4E36D225EE28A13E4D662BF99785DB1* ___parent;
+	Action_1_t6F9EB113EB3F16226AEF811A2744F4111C116C87* ___setup;
+	Stack_1_tAD790A47551563636908E21E4F08C54C0C323EB5* ___free;
+	List_1_tA239CB83DE5615F348BB0507E45F490F4F7C9A8D* ___used;
 	String_t* ___U3CNameU3Ek__BackingField;
-	int32_t ___U3CCountAllU3Ek__BackingField;
-	int32_t ___U3CGrowCountU3Ek__BackingField;
+	int32_t ___U3CTotalU3Ek__BackingField;
+	int32_t ___U3CGrownU3Ek__BackingField;
 };
 struct ObjectPool_1_t5CA62287848708B8D68392BCCE588043914E94EC  : public RuntimeObject
 {
@@ -7921,21 +7921,21 @@ IL2CPP_EXTERN_C IL2CPP_METHOD_ATTR int32_t ReadOnlyCollection_1_get_Count_mE6BED
 IL2CPP_MANAGED_FORCE_INLINE IL2CPP_METHOD_ATTR int32_t List_1_get_Count_m4407E4C389F22B8CEC282C15D56516658746C383_gshared_inline (List_1_tA239CB83DE5615F348BB0507E45F490F4F7C9A8D* __this, const RuntimeMethod* method) ;
 IL2CPP_EXTERN_C IL2CPP_METHOD_ATTR void Stack_1__ctor_m70E8EDA96A608CE9BAB7FC8313B233AADA573BD4_gshared (Stack_1_tAD790A47551563636908E21E4F08C54C0C323EB5* __this, const RuntimeMethod* method) ;
 IL2CPP_EXTERN_C IL2CPP_METHOD_ATTR void List_1__ctor_m7F078BB342729BDF11327FD89D7872265328F690_gshared (List_1_tA239CB83DE5615F348BB0507E45F490F4F7C9A8D* __this, const RuntimeMethod* method) ;
-IL2CPP_EXTERN_C IL2CPP_METHOD_ATTR RuntimeObject* ObjectPool_1_CreateInstance_m92B0814C1C81692179A19523F2C4AD7E72B3786A_gshared (ObjectPool_1_tA50B57B65E34413AE66CE47788639071A023F756* __this, const RuntimeMethod* method) ;
+IL2CPP_EXTERN_C IL2CPP_METHOD_ATTR RuntimeObject* ObjectPool_1_Create_mC76482DAC95714C03BF34D6CEB547E219C53E20D_gshared (ObjectPool_1_tA50B57B65E34413AE66CE47788639071A023F756* __this, const RuntimeMethod* method) ;
 IL2CPP_EXTERN_C IL2CPP_METHOD_ATTR void Stack_1_Push_m709DD11BC1291A905814182CF9A367DE7399A778_gshared (Stack_1_tAD790A47551563636908E21E4F08C54C0C323EB5* __this, RuntimeObject* ___0_item, const RuntimeMethod* method) ;
 IL2CPP_EXTERN_C IL2CPP_METHOD_ATTR RuntimeObject* Object_Instantiate_TisRuntimeObject_m75BF3B0A3747B60491845FA41612FE7F795F0A59_gshared (RuntimeObject* ___0_original, Transform_tB27202C6F4E36D225EE28A13E4D662BF99785DB1* ___1_parent, const RuntimeMethod* method) ;
-IL2CPP_MANAGED_FORCE_INLINE IL2CPP_METHOD_ATTR int32_t ObjectPool_1_get_CountAll_mD9E95EB668AB9DF0D91F47FB5C4909B54F5D13C2_gshared_inline (ObjectPool_1_tA50B57B65E34413AE66CE47788639071A023F756* __this, const RuntimeMethod* method) ;
-IL2CPP_MANAGED_FORCE_INLINE IL2CPP_METHOD_ATTR void ObjectPool_1_set_CountAll_m860441C8E02CCFABB1426764095A53D5ADDD259B_gshared_inline (ObjectPool_1_tA50B57B65E34413AE66CE47788639071A023F756* __this, int32_t ___0_value, const RuntimeMethod* method) ;
+IL2CPP_MANAGED_FORCE_INLINE IL2CPP_METHOD_ATTR int32_t ObjectPool_1_get_Total_mDDDAB3E234D5F3D7B517D2685EA2C838A0D0BCBA_gshared_inline (ObjectPool_1_tA50B57B65E34413AE66CE47788639071A023F756* __this, const RuntimeMethod* method) ;
+IL2CPP_MANAGED_FORCE_INLINE IL2CPP_METHOD_ATTR void ObjectPool_1_set_Total_mB4031E84319D316E72D80B728E25A6F76DE31D44_gshared_inline (ObjectPool_1_tA50B57B65E34413AE66CE47788639071A023F756* __this, int32_t ___0_value, const RuntimeMethod* method) ;
 IL2CPP_MANAGED_FORCE_INLINE IL2CPP_METHOD_ATTR void Action_1_Invoke_mF2422B2DD29F74CE66F791C3F68E288EC7C3DB9E_gshared_inline (Action_1_t6F9EB113EB3F16226AEF811A2744F4111C116C87* __this, RuntimeObject* ___0_obj, const RuntimeMethod* method) ;
 IL2CPP_MANAGED_FORCE_INLINE IL2CPP_METHOD_ATTR int32_t Stack_1_get_Count_mD08AE71D49787D30DDD9D484BCD323D646744D2E_gshared_inline (Stack_1_tAD790A47551563636908E21E4F08C54C0C323EB5* __this, const RuntimeMethod* method) ;
 IL2CPP_EXTERN_C IL2CPP_METHOD_ATTR RuntimeObject* Stack_1_Pop_m2AFF69249659372F07EE25817DBCAFE74E1CF778_gshared (Stack_1_tAD790A47551563636908E21E4F08C54C0C323EB5* __this, const RuntimeMethod* method) ;
-IL2CPP_MANAGED_FORCE_INLINE IL2CPP_METHOD_ATTR int32_t ObjectPool_1_get_GrowCount_m85DCAEF346653AE796D2C3FE8F76B9AF23B0431B_gshared_inline (ObjectPool_1_tA50B57B65E34413AE66CE47788639071A023F756* __this, const RuntimeMethod* method) ;
-IL2CPP_MANAGED_FORCE_INLINE IL2CPP_METHOD_ATTR void ObjectPool_1_set_GrowCount_m77E7FBB9854CE680DA0C01111481DDD32BC4F9B2_gshared_inline (ObjectPool_1_tA50B57B65E34413AE66CE47788639071A023F756* __this, int32_t ___0_value, const RuntimeMethod* method) ;
+IL2CPP_MANAGED_FORCE_INLINE IL2CPP_METHOD_ATTR int32_t ObjectPool_1_get_Grown_m7DD8265B158B610A971E9A79B6276685A2D7FAC0_gshared_inline (ObjectPool_1_tA50B57B65E34413AE66CE47788639071A023F756* __this, const RuntimeMethod* method) ;
+IL2CPP_MANAGED_FORCE_INLINE IL2CPP_METHOD_ATTR void ObjectPool_1_set_Grown_m4ABF8B19CF45EEDBBF1BE5BB9216249DDBC4E41A_gshared_inline (ObjectPool_1_tA50B57B65E34413AE66CE47788639071A023F756* __this, int32_t ___0_value, const RuntimeMethod* method) ;
 IL2CPP_MANAGED_FORCE_INLINE IL2CPP_METHOD_ATTR String_t* ObjectPool_1_get_Name_m713EB009111519AF6D375A8BA30C80094C204109_gshared_inline (ObjectPool_1_tA50B57B65E34413AE66CE47788639071A023F756* __this, const RuntimeMethod* method) ;
 IL2CPP_MANAGED_FORCE_INLINE IL2CPP_METHOD_ATTR void List_1_Add_mEBCF994CC3814631017F46A387B1A192ED6C85C7_gshared_inline (List_1_tA239CB83DE5615F348BB0507E45F490F4F7C9A8D* __this, RuntimeObject* ___0_item, const RuntimeMethod* method) ;
 IL2CPP_EXTERN_C IL2CPP_METHOD_ATTR bool List_1_Remove_m4DFA48F4CEB9169601E75FC28517C5C06EFA5AD7_gshared (List_1_tA239CB83DE5615F348BB0507E45F490F4F7C9A8D* __this, RuntimeObject* ___0_item, const RuntimeMethod* method) ;
 IL2CPP_EXTERN_C IL2CPP_METHOD_ATTR RuntimeObject* List_1_get_Item_m33561245D64798C2AB07584C0EC4F240E4839A38_gshared (List_1_tA239CB83DE5615F348BB0507E45F490F4F7C9A8D* __this, int32_t ___0_index, const RuntimeMethod* method) ;
-IL2CPP_EXTERN_C IL2CPP_METHOD_ATTR void ObjectPool_1_Release_m190DDD645D47935DE36829EEDB8CF777D5D6AF8C_gshared (ObjectPool_1_tA50B57B65E34413AE66CE47788639071A023F756* __this, RuntimeObject* ___0_item, const RuntimeMethod* method) ;
+IL2CPP_EXTERN_C IL2CPP_METHOD_ATTR void ObjectPool_1_Return_mAEFC36954518FA55F7B752C575A99E9790076F6B_gshared (ObjectPool_1_tA50B57B65E34413AE66CE47788639071A023F756* __this, RuntimeObject* ___0_item, const RuntimeMethod* method) ;
 IL2CPP_MANAGED_FORCE_INLINE IL2CPP_METHOD_ATTR int32_t Queue_1_get_Count_m1768ADA9855B7CDA14C9C42E098A287F1A39C3A2_gshared_inline (Queue_1_tE9EF546915795972C3BFD68FBB8FA859D3BAF3B5* __this, const RuntimeMethod* method) ;
 IL2CPP_EXTERN_C IL2CPP_METHOD_ATTR RuntimeObject* Queue_1_Dequeue_m86B243DF9EC238316EC3D27DF3E0AB8DB0987E84_gshared (Queue_1_tE9EF546915795972C3BFD68FBB8FA859D3BAF3B5* __this, const RuntimeMethod* method) ;
 IL2CPP_EXTERN_C IL2CPP_NO_INLINE IL2CPP_METHOD_ATTR RuntimeObject* Activator_CreateInstance_TisRuntimeObject_m62506836177F0F862A8D619638BF37F48721F138_gshared (const RuntimeMethod* method) ;
@@ -8390,30 +8390,31 @@ inline void List_1__ctor_m7F078BB342729BDF11327FD89D7872265328F690 (List_1_tA239
 }
 IL2CPP_EXTERN_C IL2CPP_METHOD_ATTR void Object__ctor_mE837C6B9FA8C6D5D109F4B2EC885D79919AC0EA2 (RuntimeObject* __this, const RuntimeMethod* method) ;
 IL2CPP_EXTERN_C IL2CPP_METHOD_ATTR String_t* Object_get_name_mAC2F6B897CF1303BA4249B4CB55271AFACBB6392 (Object_tC12DECB6760A7F2CBF65D9DCF18D044C2D97152C* __this, const RuntimeMethod* method) ;
-inline RuntimeObject* ObjectPool_1_CreateInstance_m92B0814C1C81692179A19523F2C4AD7E72B3786A (ObjectPool_1_tA50B57B65E34413AE66CE47788639071A023F756* __this, const RuntimeMethod* method)
+inline RuntimeObject* ObjectPool_1_Create_mC76482DAC95714C03BF34D6CEB547E219C53E20D (ObjectPool_1_tA50B57B65E34413AE66CE47788639071A023F756* __this, const RuntimeMethod* method)
 {
-	return ((  RuntimeObject* (*) (ObjectPool_1_tA50B57B65E34413AE66CE47788639071A023F756*, const RuntimeMethod*))ObjectPool_1_CreateInstance_m92B0814C1C81692179A19523F2C4AD7E72B3786A_gshared)(__this, method);
+	return ((  RuntimeObject* (*) (ObjectPool_1_tA50B57B65E34413AE66CE47788639071A023F756*, const RuntimeMethod*))ObjectPool_1_Create_mC76482DAC95714C03BF34D6CEB547E219C53E20D_gshared)(__this, method);
 }
 inline void Stack_1_Push_m709DD11BC1291A905814182CF9A367DE7399A778 (Stack_1_tAD790A47551563636908E21E4F08C54C0C323EB5* __this, RuntimeObject* ___0_item, const RuntimeMethod* method)
 {
 	((  void (*) (Stack_1_tAD790A47551563636908E21E4F08C54C0C323EB5*, RuntimeObject*, const RuntimeMethod*))Stack_1_Push_m709DD11BC1291A905814182CF9A367DE7399A778_gshared)(__this, ___0_item, method);
 }
-IL2CPP_EXTERN_C IL2CPP_METHOD_ATTR void PoolRegistry_Register_m487F743A7038BCDE7BE648AFA7CAA715B169F376 (RuntimeObject* ___0_pool, const RuntimeMethod* method) ;
+IL2CPP_EXTERN_C IL2CPP_METHOD_ATTR void Pools_Add_mCD1C2E708E571D3B8081BF4CB1494B03C9844A9B (RuntimeObject* ___0_pool, const RuntimeMethod* method) ;
 inline RuntimeObject* Object_Instantiate_TisRuntimeObject_m75BF3B0A3747B60491845FA41612FE7F795F0A59 (RuntimeObject* ___0_original, Transform_tB27202C6F4E36D225EE28A13E4D662BF99785DB1* ___1_parent, const RuntimeMethod* method)
 {
 	return ((  RuntimeObject* (*) (RuntimeObject*, Transform_tB27202C6F4E36D225EE28A13E4D662BF99785DB1*, const RuntimeMethod*))Object_Instantiate_TisRuntimeObject_m75BF3B0A3747B60491845FA41612FE7F795F0A59_gshared)(___0_original, ___1_parent, method);
 }
-inline int32_t ObjectPool_1_get_CountAll_mD9E95EB668AB9DF0D91F47FB5C4909B54F5D13C2_inline (ObjectPool_1_tA50B57B65E34413AE66CE47788639071A023F756* __this, const RuntimeMethod* method)
+inline int32_t ObjectPool_1_get_Total_mDDDAB3E234D5F3D7B517D2685EA2C838A0D0BCBA_inline (ObjectPool_1_tA50B57B65E34413AE66CE47788639071A023F756* __this, const RuntimeMethod* method)
 {
-	return ((  int32_t (*) (ObjectPool_1_tA50B57B65E34413AE66CE47788639071A023F756*, const RuntimeMethod*))ObjectPool_1_get_CountAll_mD9E95EB668AB9DF0D91F47FB5C4909B54F5D13C2_gshared_inline)(__this, method);
+	return ((  int32_t (*) (ObjectPool_1_tA50B57B65E34413AE66CE47788639071A023F756*, const RuntimeMethod*))ObjectPool_1_get_Total_mDDDAB3E234D5F3D7B517D2685EA2C838A0D0BCBA_gshared_inline)(__this, method);
 }
-IL2CPP_EXTERN_C IL2CPP_METHOD_ATTR String_t* String_Format_mFB7DA489BD99F4670881FF50EC017BFB0A5C0987 (String_t* ___0_format, RuntimeObject* ___1_arg0, RuntimeObject* ___2_arg1, const RuntimeMethod* method) ;
+IL2CPP_EXTERN_C IL2CPP_METHOD_ATTR String_t* Int32_ToString_m030E01C24E294D6762FB0B6F37CB541581F55CA5 (int32_t* __this, const RuntimeMethod* method) ;
+IL2CPP_EXTERN_C IL2CPP_METHOD_ATTR String_t* String_Concat_m8855A6DE10F84DA7F4EC113CADDB59873A25573B (String_t* ___0_str0, String_t* ___1_str1, String_t* ___2_str2, const RuntimeMethod* method) ;
 IL2CPP_EXTERN_C IL2CPP_METHOD_ATTR void Object_set_name_mC79E6DC8FFD72479C90F0C4CC7F42A0FEAF5AE47 (Object_tC12DECB6760A7F2CBF65D9DCF18D044C2D97152C* __this, String_t* ___0_value, const RuntimeMethod* method) ;
 IL2CPP_EXTERN_C IL2CPP_METHOD_ATTR GameObject_t76FEDD663AB33C991A9C9A23129337651094216F* Component_get_gameObject_m57AEFBB14DB39EC476F740BA000E170355DE691B (Component_t39FBE53E5EFCF4409111FB22C15FF73717632EC3* __this, const RuntimeMethod* method) ;
 IL2CPP_EXTERN_C IL2CPP_METHOD_ATTR void GameObject_SetActive_m638E92E1E75E519E5B24CF150B08CA8E0CDFAB92 (GameObject_t76FEDD663AB33C991A9C9A23129337651094216F* __this, bool ___0_value, const RuntimeMethod* method) ;
-inline void ObjectPool_1_set_CountAll_m860441C8E02CCFABB1426764095A53D5ADDD259B_inline (ObjectPool_1_tA50B57B65E34413AE66CE47788639071A023F756* __this, int32_t ___0_value, const RuntimeMethod* method)
+inline void ObjectPool_1_set_Total_mB4031E84319D316E72D80B728E25A6F76DE31D44_inline (ObjectPool_1_tA50B57B65E34413AE66CE47788639071A023F756* __this, int32_t ___0_value, const RuntimeMethod* method)
 {
-	((  void (*) (ObjectPool_1_tA50B57B65E34413AE66CE47788639071A023F756*, int32_t, const RuntimeMethod*))ObjectPool_1_set_CountAll_m860441C8E02CCFABB1426764095A53D5ADDD259B_gshared_inline)(__this, ___0_value, method);
+	((  void (*) (ObjectPool_1_tA50B57B65E34413AE66CE47788639071A023F756*, int32_t, const RuntimeMethod*))ObjectPool_1_set_Total_mB4031E84319D316E72D80B728E25A6F76DE31D44_gshared_inline)(__this, ___0_value, method);
 }
 inline void Action_1_Invoke_mF2422B2DD29F74CE66F791C3F68E288EC7C3DB9E_inline (Action_1_t6F9EB113EB3F16226AEF811A2744F4111C116C87* __this, RuntimeObject* ___0_obj, const RuntimeMethod* method)
 {
@@ -8427,19 +8428,18 @@ inline RuntimeObject* Stack_1_Pop_m2AFF69249659372F07EE25817DBCAFE74E1CF778 (Sta
 {
 	return ((  RuntimeObject* (*) (Stack_1_tAD790A47551563636908E21E4F08C54C0C323EB5*, const RuntimeMethod*))Stack_1_Pop_m2AFF69249659372F07EE25817DBCAFE74E1CF778_gshared)(__this, method);
 }
-inline int32_t ObjectPool_1_get_GrowCount_m85DCAEF346653AE796D2C3FE8F76B9AF23B0431B_inline (ObjectPool_1_tA50B57B65E34413AE66CE47788639071A023F756* __this, const RuntimeMethod* method)
+inline int32_t ObjectPool_1_get_Grown_m7DD8265B158B610A971E9A79B6276685A2D7FAC0_inline (ObjectPool_1_tA50B57B65E34413AE66CE47788639071A023F756* __this, const RuntimeMethod* method)
 {
-	return ((  int32_t (*) (ObjectPool_1_tA50B57B65E34413AE66CE47788639071A023F756*, const RuntimeMethod*))ObjectPool_1_get_GrowCount_m85DCAEF346653AE796D2C3FE8F76B9AF23B0431B_gshared_inline)(__this, method);
+	return ((  int32_t (*) (ObjectPool_1_tA50B57B65E34413AE66CE47788639071A023F756*, const RuntimeMethod*))ObjectPool_1_get_Grown_m7DD8265B158B610A971E9A79B6276685A2D7FAC0_gshared_inline)(__this, method);
 }
-inline void ObjectPool_1_set_GrowCount_m77E7FBB9854CE680DA0C01111481DDD32BC4F9B2_inline (ObjectPool_1_tA50B57B65E34413AE66CE47788639071A023F756* __this, int32_t ___0_value, const RuntimeMethod* method)
+inline void ObjectPool_1_set_Grown_m4ABF8B19CF45EEDBBF1BE5BB9216249DDBC4E41A_inline (ObjectPool_1_tA50B57B65E34413AE66CE47788639071A023F756* __this, int32_t ___0_value, const RuntimeMethod* method)
 {
-	((  void (*) (ObjectPool_1_tA50B57B65E34413AE66CE47788639071A023F756*, int32_t, const RuntimeMethod*))ObjectPool_1_set_GrowCount_m77E7FBB9854CE680DA0C01111481DDD32BC4F9B2_gshared_inline)(__this, ___0_value, method);
+	((  void (*) (ObjectPool_1_tA50B57B65E34413AE66CE47788639071A023F756*, int32_t, const RuntimeMethod*))ObjectPool_1_set_Grown_m4ABF8B19CF45EEDBBF1BE5BB9216249DDBC4E41A_gshared_inline)(__this, ___0_value, method);
 }
 inline String_t* ObjectPool_1_get_Name_m713EB009111519AF6D375A8BA30C80094C204109_inline (ObjectPool_1_tA50B57B65E34413AE66CE47788639071A023F756* __this, const RuntimeMethod* method)
 {
 	return ((  String_t* (*) (ObjectPool_1_tA50B57B65E34413AE66CE47788639071A023F756*, const RuntimeMethod*))ObjectPool_1_get_Name_m713EB009111519AF6D375A8BA30C80094C204109_gshared_inline)(__this, method);
 }
-IL2CPP_EXTERN_C IL2CPP_METHOD_ATTR String_t* String_Concat_m8855A6DE10F84DA7F4EC113CADDB59873A25573B (String_t* ___0_str0, String_t* ___1_str1, String_t* ___2_str2, const RuntimeMethod* method) ;
 IL2CPP_EXTERN_C IL2CPP_METHOD_ATTR void Debug_LogWarning_m33EF1B897E0C7C6FF538989610BFAFFEF4628CA9 (RuntimeObject* ___0_message, const RuntimeMethod* method) ;
 IL2CPP_EXTERN_C IL2CPP_METHOD_ATTR Transform_tB27202C6F4E36D225EE28A13E4D662BF99785DB1* Component_get_transform_m2919A1D81931E6932C7F06D4C2F0AB8DDA9A5371 (Component_t39FBE53E5EFCF4409111FB22C15FF73717632EC3* __this, const RuntimeMethod* method) ;
 IL2CPP_EXTERN_C IL2CPP_METHOD_ATTR void Transform_SetPositionAndRotation_m418859BF59086EEAA084FFD6F258A43FAB408F5A (Transform_tB27202C6F4E36D225EE28A13E4D662BF99785DB1* __this, Vector3_t24C512C7B96BBABAD472002D0BA2BDA40A5A80B2 ___0_position, Quaternion_tDA59F214EF07D7700B26E40E562F267AF7306974 ___1_rotation, const RuntimeMethod* method) ;
@@ -8459,9 +8459,9 @@ inline RuntimeObject* List_1_get_Item_m33561245D64798C2AB07584C0EC4F240E4839A38 
 {
 	return ((  RuntimeObject* (*) (List_1_tA239CB83DE5615F348BB0507E45F490F4F7C9A8D*, int32_t, const RuntimeMethod*))List_1_get_Item_m33561245D64798C2AB07584C0EC4F240E4839A38_gshared)(__this, ___0_index, method);
 }
-inline void ObjectPool_1_Release_m190DDD645D47935DE36829EEDB8CF777D5D6AF8C (ObjectPool_1_tA50B57B65E34413AE66CE47788639071A023F756* __this, RuntimeObject* ___0_item, const RuntimeMethod* method)
+inline void ObjectPool_1_Return_mAEFC36954518FA55F7B752C575A99E9790076F6B (ObjectPool_1_tA50B57B65E34413AE66CE47788639071A023F756* __this, RuntimeObject* ___0_item, const RuntimeMethod* method)
 {
-	((  void (*) (ObjectPool_1_tA50B57B65E34413AE66CE47788639071A023F756*, RuntimeObject*, const RuntimeMethod*))ObjectPool_1_Release_m190DDD645D47935DE36829EEDB8CF777D5D6AF8C_gshared)(__this, ___0_item, method);
+	((  void (*) (ObjectPool_1_tA50B57B65E34413AE66CE47788639071A023F756*, RuntimeObject*, const RuntimeMethod*))ObjectPool_1_Return_mAEFC36954518FA55F7B752C575A99E9790076F6B_gshared)(__this, ___0_item, method);
 }
 inline int32_t Queue_1_get_Count_m1768ADA9855B7CDA14C9C42E098A287F1A39C3A2_inline (Queue_1_tE9EF546915795972C3BFD68FBB8FA859D3BAF3B5* __this, const RuntimeMethod* method)
 {
@@ -8866,6 +8866,7 @@ inline void Pair_2__ctor_mCA54688368FE894C9F314471A3DA94A72B709F51 (Pair_2_tF8A4
 {
 	((  void (*) (Pair_2_tF8A435CDED15A96555BAB1E37C58429B2FF464A6*, Il2CppFullySharedGenericAny, Il2CppFullySharedGenericAny, const RuntimeMethod*))Pair_2__ctor_mCA54688368FE894C9F314471A3DA94A72B709F51_gshared)((Pair_2_tF8A435CDED15A96555BAB1E37C58429B2FF464A6*)__this, ___0_k, ___1_v, method);
 }
+IL2CPP_EXTERN_C IL2CPP_METHOD_ATTR String_t* String_Format_mFB7DA489BD99F4670881FF50EC017BFB0A5C0987 (String_t* ___0_format, RuntimeObject* ___1_arg0, RuntimeObject* ___2_arg1, const RuntimeMethod* method) ;
 inline String_t* Pair_2_ToString_m085342B96D11597F12C847BB5175075784F51E5B (Pair_2_tF8A435CDED15A96555BAB1E37C58429B2FF464A6* __this, const RuntimeMethod* method)
 {
 	return ((  String_t* (*) (Pair_2_tF8A435CDED15A96555BAB1E37C58429B2FF464A6*, const RuntimeMethod*))Pair_2_ToString_m085342B96D11597F12C847BB5175075784F51E5B_gshared)(__this, method);
@@ -19591,160 +19592,160 @@ IL2CPP_EXTERN_C IL2CPP_METHOD_ATTR VolumeParameter_t95994C89644D2CC4C11F66657149
 #pragma clang diagnostic ignored "-Winvalid-offsetof"
 #pragma clang diagnostic ignored "-Wunused-variable"
 #endif
-// Method Definition Index: 77896
+// Method Definition Index: 77490
 IL2CPP_EXTERN_C IL2CPP_METHOD_ATTR String_t* ObjectPool_1_get_Name_m713EB009111519AF6D375A8BA30C80094C204109_gshared (ObjectPool_1_tA50B57B65E34413AE66CE47788639071A023F756* __this, const RuntimeMethod* method) 
 {
 	{
-		//<source_info:C:/Users/MSI/Documents/Survival_Shooter/Assets/_Project/Scripts/ObjectPool.cs:40>
+		//<source_info:C:/Users/MSI/Documents/Survival_Shooter/Assets/_Project/Scripts/ObjectPool.cs:30>
 		String_t* L_0 = __this->___U3CNameU3Ek__BackingField;
 		return L_0;
 	}
 }
-// Method Definition Index: 77897
-IL2CPP_EXTERN_C IL2CPP_METHOD_ATTR int32_t ObjectPool_1_get_CountAll_mD9E95EB668AB9DF0D91F47FB5C4909B54F5D13C2_gshared (ObjectPool_1_tA50B57B65E34413AE66CE47788639071A023F756* __this, const RuntimeMethod* method) 
+// Method Definition Index: 77491
+IL2CPP_EXTERN_C IL2CPP_METHOD_ATTR int32_t ObjectPool_1_get_Total_mDDDAB3E234D5F3D7B517D2685EA2C838A0D0BCBA_gshared (ObjectPool_1_tA50B57B65E34413AE66CE47788639071A023F756* __this, const RuntimeMethod* method) 
 {
 	{
-		//<source_info:C:/Users/MSI/Documents/Survival_Shooter/Assets/_Project/Scripts/ObjectPool.cs:41>
-		int32_t L_0 = __this->___U3CCountAllU3Ek__BackingField;
+		//<source_info:C:/Users/MSI/Documents/Survival_Shooter/Assets/_Project/Scripts/ObjectPool.cs:31>
+		int32_t L_0 = __this->___U3CTotalU3Ek__BackingField;
 		return L_0;
 	}
 }
-// Method Definition Index: 77898
-IL2CPP_EXTERN_C IL2CPP_METHOD_ATTR void ObjectPool_1_set_CountAll_m860441C8E02CCFABB1426764095A53D5ADDD259B_gshared (ObjectPool_1_tA50B57B65E34413AE66CE47788639071A023F756* __this, int32_t ___0_value, const RuntimeMethod* method) 
+// Method Definition Index: 77492
+IL2CPP_EXTERN_C IL2CPP_METHOD_ATTR void ObjectPool_1_set_Total_mB4031E84319D316E72D80B728E25A6F76DE31D44_gshared (ObjectPool_1_tA50B57B65E34413AE66CE47788639071A023F756* __this, int32_t ___0_value, const RuntimeMethod* method) 
 {
 	{
-		//<source_info:C:/Users/MSI/Documents/Survival_Shooter/Assets/_Project/Scripts/ObjectPool.cs:41>
+		//<source_info:C:/Users/MSI/Documents/Survival_Shooter/Assets/_Project/Scripts/ObjectPool.cs:31>
 		int32_t L_0 = ___0_value;
-		__this->___U3CCountAllU3Ek__BackingField = L_0;
+		__this->___U3CTotalU3Ek__BackingField = L_0;
 		return;
 	}
 }
-// Method Definition Index: 77899
-IL2CPP_EXTERN_C IL2CPP_METHOD_ATTR int32_t ObjectPool_1_get_CountActive_m965FF9895B146D6758525EE2DDC586C31E282532_gshared (ObjectPool_1_tA50B57B65E34413AE66CE47788639071A023F756* __this, const RuntimeMethod* method) 
+// Method Definition Index: 77493
+IL2CPP_EXTERN_C IL2CPP_METHOD_ATTR int32_t ObjectPool_1_get_InUse_m449D1520DB4668079B8C6BB42E5B8BBB9CFEBC7F_gshared (ObjectPool_1_tA50B57B65E34413AE66CE47788639071A023F756* __this, const RuntimeMethod* method) 
 {
 	{
-		//<source_info:C:/Users/MSI/Documents/Survival_Shooter/Assets/_Project/Scripts/ObjectPool.cs:42>
-		List_1_tA239CB83DE5615F348BB0507E45F490F4F7C9A8D* L_0 = __this->____active;
+		//<source_info:C:/Users/MSI/Documents/Survival_Shooter/Assets/_Project/Scripts/ObjectPool.cs:32>
+		List_1_tA239CB83DE5615F348BB0507E45F490F4F7C9A8D* L_0 = __this->___used;
 		NullCheck(L_0);
 		int32_t L_1;
 		L_1 = List_1_get_Count_m4407E4C389F22B8CEC282C15D56516658746C383_inline(L_0, il2cpp_rgctx_method(method->klass->rgctx_data, 2));
 		return L_1;
 	}
 }
-// Method Definition Index: 77900
-IL2CPP_EXTERN_C IL2CPP_METHOD_ATTR int32_t ObjectPool_1_get_GrowCount_m85DCAEF346653AE796D2C3FE8F76B9AF23B0431B_gshared (ObjectPool_1_tA50B57B65E34413AE66CE47788639071A023F756* __this, const RuntimeMethod* method) 
+// Method Definition Index: 77494
+IL2CPP_EXTERN_C IL2CPP_METHOD_ATTR int32_t ObjectPool_1_get_Grown_m7DD8265B158B610A971E9A79B6276685A2D7FAC0_gshared (ObjectPool_1_tA50B57B65E34413AE66CE47788639071A023F756* __this, const RuntimeMethod* method) 
 {
 	{
-		//<source_info:C:/Users/MSI/Documents/Survival_Shooter/Assets/_Project/Scripts/ObjectPool.cs:43>
-		int32_t L_0 = __this->___U3CGrowCountU3Ek__BackingField;
+		//<source_info:C:/Users/MSI/Documents/Survival_Shooter/Assets/_Project/Scripts/ObjectPool.cs:33>
+		int32_t L_0 = __this->___U3CGrownU3Ek__BackingField;
 		return L_0;
 	}
 }
-// Method Definition Index: 77901
-IL2CPP_EXTERN_C IL2CPP_METHOD_ATTR void ObjectPool_1_set_GrowCount_m77E7FBB9854CE680DA0C01111481DDD32BC4F9B2_gshared (ObjectPool_1_tA50B57B65E34413AE66CE47788639071A023F756* __this, int32_t ___0_value, const RuntimeMethod* method) 
+// Method Definition Index: 77495
+IL2CPP_EXTERN_C IL2CPP_METHOD_ATTR void ObjectPool_1_set_Grown_m4ABF8B19CF45EEDBBF1BE5BB9216249DDBC4E41A_gshared (ObjectPool_1_tA50B57B65E34413AE66CE47788639071A023F756* __this, int32_t ___0_value, const RuntimeMethod* method) 
 {
 	{
-		//<source_info:C:/Users/MSI/Documents/Survival_Shooter/Assets/_Project/Scripts/ObjectPool.cs:43>
+		//<source_info:C:/Users/MSI/Documents/Survival_Shooter/Assets/_Project/Scripts/ObjectPool.cs:33>
 		int32_t L_0 = ___0_value;
-		__this->___U3CGrowCountU3Ek__BackingField = L_0;
+		__this->___U3CGrownU3Ek__BackingField = L_0;
 		return;
 	}
 }
-// Method Definition Index: 77902
+// Method Definition Index: 77496
 IL2CPP_EXTERN_C IL2CPP_METHOD_ATTR RuntimeObject* ObjectPool_1_get_Active_mD0ADC71F62E0806357D56BEEC593BB8B1D267198_gshared (ObjectPool_1_tA50B57B65E34413AE66CE47788639071A023F756* __this, const RuntimeMethod* method) 
 {
 	{
-		//<source_info:C:/Users/MSI/Documents/Survival_Shooter/Assets/_Project/Scripts/ObjectPool.cs:44>
-		List_1_tA239CB83DE5615F348BB0507E45F490F4F7C9A8D* L_0 = __this->____active;
+		//<source_info:C:/Users/MSI/Documents/Survival_Shooter/Assets/_Project/Scripts/ObjectPool.cs:34>
+		List_1_tA239CB83DE5615F348BB0507E45F490F4F7C9A8D* L_0 = __this->___used;
 		return (RuntimeObject*)L_0;
 	}
 }
-// Method Definition Index: 77903
-IL2CPP_EXTERN_C IL2CPP_METHOD_ATTR void ObjectPool_1__ctor_m835921F47DFA7A53A34D921494CB4A489DEFDB63_gshared (ObjectPool_1_tA50B57B65E34413AE66CE47788639071A023F756* __this, RuntimeObject* ___0_prefab, int32_t ___1_prewarm, Transform_tB27202C6F4E36D225EE28A13E4D662BF99785DB1* ___2_parent, Action_1_t6F9EB113EB3F16226AEF811A2744F4111C116C87* ___3_onCreate, const RuntimeMethod* method) 
+// Method Definition Index: 77497
+IL2CPP_EXTERN_C IL2CPP_METHOD_ATTR void ObjectPool_1__ctor_m835921F47DFA7A53A34D921494CB4A489DEFDB63_gshared (ObjectPool_1_tA50B57B65E34413AE66CE47788639071A023F756* __this, RuntimeObject* ___0_prefab, int32_t ___1_size, Transform_tB27202C6F4E36D225EE28A13E4D662BF99785DB1* ___2_parent, Action_1_t6F9EB113EB3F16226AEF811A2744F4111C116C87* ___3_setup, const RuntimeMethod* method) 
 {
 	static bool s_Il2CppMethodInitialized;
 	if (!s_Il2CppMethodInitialized)
 	{
-		il2cpp_codegen_initialize_runtime_metadata((uintptr_t*)&PoolRegistry_tAD08465CDD7874903CAC1C38FE2A10287BC4AEC4_il2cpp_TypeInfo_var);
+		il2cpp_codegen_initialize_runtime_metadata((uintptr_t*)&Pools_t6CA45AD4D45A1774BC1FD00280438B42E94F3928_il2cpp_TypeInfo_var);
 		s_Il2CppMethodInitialized = true;
 	}
 	int32_t V_0 = 0;
 	{
-		//<source_info:C:/Users/MSI/Documents/Survival_Shooter/Assets/_Project/Scripts/ObjectPool.cs:37>
+		//<source_info:C:/Users/MSI/Documents/Survival_Shooter/Assets/_Project/Scripts/ObjectPool.cs:27>
 		Stack_1_tAD790A47551563636908E21E4F08C54C0C323EB5* L_0 = (Stack_1_tAD790A47551563636908E21E4F08C54C0C323EB5*)il2cpp_codegen_object_new(il2cpp_rgctx_data(method->klass->rgctx_data, 4));
 		Stack_1__ctor_m70E8EDA96A608CE9BAB7FC8313B233AADA573BD4(L_0, il2cpp_rgctx_method(method->klass->rgctx_data, 5));
-		__this->____inactive = L_0;
-		Il2CppCodeGenWriteBarrier((void**)(&__this->____inactive), (void*)L_0);
-		//<source_info:C:/Users/MSI/Documents/Survival_Shooter/Assets/_Project/Scripts/ObjectPool.cs:38>
+		__this->___free = L_0;
+		Il2CppCodeGenWriteBarrier((void**)(&__this->___free), (void*)L_0);
+		//<source_info:C:/Users/MSI/Documents/Survival_Shooter/Assets/_Project/Scripts/ObjectPool.cs:28>
 		List_1_tA239CB83DE5615F348BB0507E45F490F4F7C9A8D* L_1 = (List_1_tA239CB83DE5615F348BB0507E45F490F4F7C9A8D*)il2cpp_codegen_object_new(il2cpp_rgctx_data(method->klass->rgctx_data, 1));
 		List_1__ctor_m7F078BB342729BDF11327FD89D7872265328F690(L_1, il2cpp_rgctx_method(method->klass->rgctx_data, 6));
-		__this->____active = L_1;
-		Il2CppCodeGenWriteBarrier((void**)(&__this->____active), (void*)L_1);
-		//<source_info:C:/Users/MSI/Documents/Survival_Shooter/Assets/_Project/Scripts/ObjectPool.cs:47>
+		__this->___used = L_1;
+		Il2CppCodeGenWriteBarrier((void**)(&__this->___used), (void*)L_1);
+		//<source_info:C:/Users/MSI/Documents/Survival_Shooter/Assets/_Project/Scripts/ObjectPool.cs:36>
 		Object__ctor_mE837C6B9FA8C6D5D109F4B2EC885D79919AC0EA2((RuntimeObject*)__this, NULL);
-		//<source_info:C:/Users/MSI/Documents/Survival_Shooter/Assets/_Project/Scripts/ObjectPool.cs:49>
+		//<source_info:C:/Users/MSI/Documents/Survival_Shooter/Assets/_Project/Scripts/ObjectPool.cs:38>
 		RuntimeObject* L_2 = ___0_prefab;
-		__this->____prefab = L_2;
-		Il2CppCodeGenWriteBarrier((void**)(&__this->____prefab), (void*)L_2);
-		//<source_info:C:/Users/MSI/Documents/Survival_Shooter/Assets/_Project/Scripts/ObjectPool.cs:50>
+		__this->___prefab = L_2;
+		Il2CppCodeGenWriteBarrier((void**)(&__this->___prefab), (void*)L_2);
+		//<source_info:C:/Users/MSI/Documents/Survival_Shooter/Assets/_Project/Scripts/ObjectPool.cs:39>
 		Transform_tB27202C6F4E36D225EE28A13E4D662BF99785DB1* L_3 = ___2_parent;
-		__this->____parent = L_3;
-		Il2CppCodeGenWriteBarrier((void**)(&__this->____parent), (void*)L_3);
-		//<source_info:C:/Users/MSI/Documents/Survival_Shooter/Assets/_Project/Scripts/ObjectPool.cs:51>
-		Action_1_t6F9EB113EB3F16226AEF811A2744F4111C116C87* L_4 = ___3_onCreate;
-		__this->____onCreate = L_4;
-		Il2CppCodeGenWriteBarrier((void**)(&__this->____onCreate), (void*)L_4);
-		//<source_info:C:/Users/MSI/Documents/Survival_Shooter/Assets/_Project/Scripts/ObjectPool.cs:52>
+		__this->___parent = L_3;
+		Il2CppCodeGenWriteBarrier((void**)(&__this->___parent), (void*)L_3);
+		//<source_info:C:/Users/MSI/Documents/Survival_Shooter/Assets/_Project/Scripts/ObjectPool.cs:40>
+		Action_1_t6F9EB113EB3F16226AEF811A2744F4111C116C87* L_4 = ___3_setup;
+		__this->___setup = L_4;
+		Il2CppCodeGenWriteBarrier((void**)(&__this->___setup), (void*)L_4);
+		//<source_info:C:/Users/MSI/Documents/Survival_Shooter/Assets/_Project/Scripts/ObjectPool.cs:41>
 		RuntimeObject* L_5 = ___0_prefab;
 		NullCheck((Object_tC12DECB6760A7F2CBF65D9DCF18D044C2D97152C*)L_5);
 		String_t* L_6;
 		L_6 = Object_get_name_mAC2F6B897CF1303BA4249B4CB55271AFACBB6392((Object_tC12DECB6760A7F2CBF65D9DCF18D044C2D97152C*)L_5, NULL);
 		__this->___U3CNameU3Ek__BackingField = L_6;
 		Il2CppCodeGenWriteBarrier((void**)(&__this->___U3CNameU3Ek__BackingField), (void*)L_6);
-		//<source_info:C:/Users/MSI/Documents/Survival_Shooter/Assets/_Project/Scripts/ObjectPool.cs:53>
+		//<source_info:C:/Users/MSI/Documents/Survival_Shooter/Assets/_Project/Scripts/ObjectPool.cs:42>
 		V_0 = 0;
 		goto IL_005c;
 	}
 
 IL_0047:
 	{
-		//<source_info:C:/Users/MSI/Documents/Survival_Shooter/Assets/_Project/Scripts/ObjectPool.cs:54>
-		Stack_1_tAD790A47551563636908E21E4F08C54C0C323EB5* L_7 = __this->____inactive;
+		//<source_info:C:/Users/MSI/Documents/Survival_Shooter/Assets/_Project/Scripts/ObjectPool.cs:43>
+		Stack_1_tAD790A47551563636908E21E4F08C54C0C323EB5* L_7 = __this->___free;
 		RuntimeObject* L_8;
-		L_8 = ObjectPool_1_CreateInstance_m92B0814C1C81692179A19523F2C4AD7E72B3786A(__this, il2cpp_rgctx_method(method->klass->rgctx_data, 9));
+		L_8 = ObjectPool_1_Create_mC76482DAC95714C03BF34D6CEB547E219C53E20D(__this, il2cpp_rgctx_method(method->klass->rgctx_data, 9));
 		NullCheck(L_7);
 		Stack_1_Push_m709DD11BC1291A905814182CF9A367DE7399A778(L_7, L_8, il2cpp_rgctx_method(method->klass->rgctx_data, 10));
-		//<source_info:C:/Users/MSI/Documents/Survival_Shooter/Assets/_Project/Scripts/ObjectPool.cs:53>
+		//<source_info:C:/Users/MSI/Documents/Survival_Shooter/Assets/_Project/Scripts/ObjectPool.cs:42>
 		int32_t L_9 = V_0;
 		V_0 = ((int32_t)il2cpp_codegen_add(L_9, 1));
 	}
 
 IL_005c:
 	{
-		//<source_info:C:/Users/MSI/Documents/Survival_Shooter/Assets/_Project/Scripts/ObjectPool.cs:53>
+		//<source_info:C:/Users/MSI/Documents/Survival_Shooter/Assets/_Project/Scripts/ObjectPool.cs:42>
 		int32_t L_10 = V_0;
-		int32_t L_11 = ___1_prewarm;
+		int32_t L_11 = ___1_size;
 		if ((((int32_t)L_10) < ((int32_t)L_11)))
 		{
 			goto IL_0047;
 		}
 	}
 	{
-		//<source_info:C:/Users/MSI/Documents/Survival_Shooter/Assets/_Project/Scripts/ObjectPool.cs:55>
-		il2cpp_codegen_runtime_class_init_inline(PoolRegistry_tAD08465CDD7874903CAC1C38FE2A10287BC4AEC4_il2cpp_TypeInfo_var);
-		PoolRegistry_Register_m487F743A7038BCDE7BE648AFA7CAA715B169F376((RuntimeObject*)__this, NULL);
-		//<source_info:C:/Users/MSI/Documents/Survival_Shooter/Assets/_Project/Scripts/ObjectPool.cs:56>
+		//<source_info:C:/Users/MSI/Documents/Survival_Shooter/Assets/_Project/Scripts/ObjectPool.cs:44>
+		il2cpp_codegen_runtime_class_init_inline(Pools_t6CA45AD4D45A1774BC1FD00280438B42E94F3928_il2cpp_TypeInfo_var);
+		Pools_Add_mCD1C2E708E571D3B8081BF4CB1494B03C9844A9B((RuntimeObject*)__this, NULL);
+		//<source_info:C:/Users/MSI/Documents/Survival_Shooter/Assets/_Project/Scripts/ObjectPool.cs:45>
 		return;
 	}
 }
-// Method Definition Index: 77904
-IL2CPP_EXTERN_C IL2CPP_METHOD_ATTR RuntimeObject* ObjectPool_1_CreateInstance_m92B0814C1C81692179A19523F2C4AD7E72B3786A_gshared (ObjectPool_1_tA50B57B65E34413AE66CE47788639071A023F756* __this, const RuntimeMethod* method) 
+// Method Definition Index: 77498
+IL2CPP_EXTERN_C IL2CPP_METHOD_ATTR RuntimeObject* ObjectPool_1_Create_mC76482DAC95714C03BF34D6CEB547E219C53E20D_gshared (ObjectPool_1_tA50B57B65E34413AE66CE47788639071A023F756* __this, const RuntimeMethod* method) 
 {
 	static bool s_Il2CppMethodInitialized;
 	if (!s_Il2CppMethodInitialized)
 	{
 		il2cpp_codegen_initialize_runtime_metadata((uintptr_t*)&Object_tC12DECB6760A7F2CBF65D9DCF18D044C2D97152C_il2cpp_TypeInfo_var);
-		il2cpp_codegen_initialize_runtime_metadata((uintptr_t*)&_stringLiteralE49AE09F731F4E0F40AA7F71DA51F8605C2568C3);
+		il2cpp_codegen_initialize_runtime_metadata((uintptr_t*)&_stringLiteral50639CAD49418C7B223CC529395C0E2A3892501C);
 		s_Il2CppMethodInitialized = true;
 	}
 	RuntimeObject* V_0 = NULL;
@@ -19752,69 +19753,70 @@ IL2CPP_EXTERN_C IL2CPP_METHOD_ATTR RuntimeObject* ObjectPool_1_CreateInstance_m9
 	Action_1_t6F9EB113EB3F16226AEF811A2744F4111C116C87* G_B2_0 = NULL;
 	Action_1_t6F9EB113EB3F16226AEF811A2744F4111C116C87* G_B1_0 = NULL;
 	{
-		//<source_info:C:/Users/MSI/Documents/Survival_Shooter/Assets/_Project/Scripts/ObjectPool.cs:60>
-		RuntimeObject* L_0 = __this->____prefab;
-		Transform_tB27202C6F4E36D225EE28A13E4D662BF99785DB1* L_1 = __this->____parent;
+		//<source_info:C:/Users/MSI/Documents/Survival_Shooter/Assets/_Project/Scripts/ObjectPool.cs:49>
+		RuntimeObject* L_0 = __this->___prefab;
+		Transform_tB27202C6F4E36D225EE28A13E4D662BF99785DB1* L_1 = __this->___parent;
 		il2cpp_codegen_runtime_class_init_inline(Object_tC12DECB6760A7F2CBF65D9DCF18D044C2D97152C_il2cpp_TypeInfo_var);
 		RuntimeObject* L_2;
 		L_2 = Object_Instantiate_TisRuntimeObject_m75BF3B0A3747B60491845FA41612FE7F795F0A59(L_0, L_1, il2cpp_rgctx_method(method->klass->rgctx_data, 11));
 		V_0 = L_2;
-		//<source_info:C:/Users/MSI/Documents/Survival_Shooter/Assets/_Project/Scripts/ObjectPool.cs:61>
+		//<source_info:C:/Users/MSI/Documents/Survival_Shooter/Assets/_Project/Scripts/ObjectPool.cs:50>
 		RuntimeObject* L_3 = V_0;
-		RuntimeObject* L_4 = __this->____prefab;
+		RuntimeObject* L_4 = __this->___prefab;
 		NullCheck((Object_tC12DECB6760A7F2CBF65D9DCF18D044C2D97152C*)L_4);
 		String_t* L_5;
 		L_5 = Object_get_name_mAC2F6B897CF1303BA4249B4CB55271AFACBB6392((Object_tC12DECB6760A7F2CBF65D9DCF18D044C2D97152C*)L_4, NULL);
 		int32_t L_6;
-		L_6 = ObjectPool_1_get_CountAll_mD9E95EB668AB9DF0D91F47FB5C4909B54F5D13C2_inline(__this, il2cpp_rgctx_method(method->klass->rgctx_data, 12));
-		int32_t L_7 = L_6;
-		RuntimeObject* L_8 = Box(il2cpp_defaults.int32_class, &L_7);
-		String_t* L_9;
-		L_9 = String_Format_mFB7DA489BD99F4670881FF50EC017BFB0A5C0987(_stringLiteralE49AE09F731F4E0F40AA7F71DA51F8605C2568C3, (RuntimeObject*)L_5, L_8, NULL);
+		L_6 = ObjectPool_1_get_Total_mDDDAB3E234D5F3D7B517D2685EA2C838A0D0BCBA_inline(__this, il2cpp_rgctx_method(method->klass->rgctx_data, 12));
+		V_1 = L_6;
+		String_t* L_7;
+		L_7 = Int32_ToString_m030E01C24E294D6762FB0B6F37CB541581F55CA5((&V_1), NULL);
+		String_t* L_8;
+		L_8 = String_Concat_m8855A6DE10F84DA7F4EC113CADDB59873A25573B(L_5, _stringLiteral50639CAD49418C7B223CC529395C0E2A3892501C, L_7, NULL);
 		NullCheck((Object_tC12DECB6760A7F2CBF65D9DCF18D044C2D97152C*)L_3);
-		Object_set_name_mC79E6DC8FFD72479C90F0C4CC7F42A0FEAF5AE47((Object_tC12DECB6760A7F2CBF65D9DCF18D044C2D97152C*)L_3, L_9, NULL);
-		//<source_info:C:/Users/MSI/Documents/Survival_Shooter/Assets/_Project/Scripts/ObjectPool.cs:62>
-		RuntimeObject* L_10 = V_0;
-		NullCheck((Component_t39FBE53E5EFCF4409111FB22C15FF73717632EC3*)L_10);
-		GameObject_t76FEDD663AB33C991A9C9A23129337651094216F* L_11;
-		L_11 = Component_get_gameObject_m57AEFBB14DB39EC476F740BA000E170355DE691B((Component_t39FBE53E5EFCF4409111FB22C15FF73717632EC3*)L_10, NULL);
-		NullCheck(L_11);
-		GameObject_SetActive_m638E92E1E75E519E5B24CF150B08CA8E0CDFAB92(L_11, (bool)0, NULL);
-		//<source_info:C:/Users/MSI/Documents/Survival_Shooter/Assets/_Project/Scripts/ObjectPool.cs:63>
-		int32_t L_12;
-		L_12 = ObjectPool_1_get_CountAll_mD9E95EB668AB9DF0D91F47FB5C4909B54F5D13C2_inline(__this, il2cpp_rgctx_method(method->klass->rgctx_data, 12));
-		V_1 = L_12;
-		int32_t L_13 = V_1;
-		ObjectPool_1_set_CountAll_m860441C8E02CCFABB1426764095A53D5ADDD259B_inline(__this, ((int32_t)il2cpp_codegen_add(L_13, 1)), il2cpp_rgctx_method(method->klass->rgctx_data, 13));
-		//<source_info:C:/Users/MSI/Documents/Survival_Shooter/Assets/_Project/Scripts/ObjectPool.cs:64>
-		Action_1_t6F9EB113EB3F16226AEF811A2744F4111C116C87* L_14 = __this->____onCreate;
-		Action_1_t6F9EB113EB3F16226AEF811A2744F4111C116C87* L_15 = L_14;
-		if (L_15)
+		Object_set_name_mC79E6DC8FFD72479C90F0C4CC7F42A0FEAF5AE47((Object_tC12DECB6760A7F2CBF65D9DCF18D044C2D97152C*)L_3, L_8, NULL);
+		//<source_info:C:/Users/MSI/Documents/Survival_Shooter/Assets/_Project/Scripts/ObjectPool.cs:51>
+		RuntimeObject* L_9 = V_0;
+		NullCheck((Component_t39FBE53E5EFCF4409111FB22C15FF73717632EC3*)L_9);
+		GameObject_t76FEDD663AB33C991A9C9A23129337651094216F* L_10;
+		L_10 = Component_get_gameObject_m57AEFBB14DB39EC476F740BA000E170355DE691B((Component_t39FBE53E5EFCF4409111FB22C15FF73717632EC3*)L_9, NULL);
+		NullCheck(L_10);
+		GameObject_SetActive_m638E92E1E75E519E5B24CF150B08CA8E0CDFAB92(L_10, (bool)0, NULL);
+		//<source_info:C:/Users/MSI/Documents/Survival_Shooter/Assets/_Project/Scripts/ObjectPool.cs:52>
+		int32_t L_11;
+		L_11 = ObjectPool_1_get_Total_mDDDAB3E234D5F3D7B517D2685EA2C838A0D0BCBA_inline(__this, il2cpp_rgctx_method(method->klass->rgctx_data, 12));
+		V_1 = L_11;
+		int32_t L_12 = V_1;
+		ObjectPool_1_set_Total_mB4031E84319D316E72D80B728E25A6F76DE31D44_inline(__this, ((int32_t)il2cpp_codegen_add(L_12, 1)), il2cpp_rgctx_method(method->klass->rgctx_data, 13));
+		//<source_info:C:/Users/MSI/Documents/Survival_Shooter/Assets/_Project/Scripts/ObjectPool.cs:53>
+		Action_1_t6F9EB113EB3F16226AEF811A2744F4111C116C87* L_13 = __this->___setup;
+		Action_1_t6F9EB113EB3F16226AEF811A2744F4111C116C87* L_14 = L_13;
+		if (L_14)
 		{
-			G_B2_0 = L_15;
-			goto IL_006f;
+			G_B2_0 = L_14;
+			goto IL_0072;
 		}
-		G_B1_0 = L_15;
+		G_B1_0 = L_14;
 	}
 	{
-		goto IL_0075;
+		goto IL_0078;
 	}
 
-IL_006f:
+IL_0072:
 	{
-		RuntimeObject* L_16 = V_0;
+		RuntimeObject* L_15 = V_0;
 		NullCheck(G_B2_0);
-		Action_1_Invoke_mF2422B2DD29F74CE66F791C3F68E288EC7C3DB9E_inline(G_B2_0, L_16, il2cpp_rgctx_method(method->klass->rgctx_data, 14));
+		Action_1_Invoke_mF2422B2DD29F74CE66F791C3F68E288EC7C3DB9E_inline(G_B2_0, L_15, il2cpp_rgctx_method(method->klass->rgctx_data, 14));
 	}
 
-IL_0075:
+IL_0078:
 	{
-		//<source_info:C:/Users/MSI/Documents/Survival_Shooter/Assets/_Project/Scripts/ObjectPool.cs:65>
-		RuntimeObject* L_17 = V_0;
-		return L_17;
+		//<source_info:C:/Users/MSI/Documents/Survival_Shooter/Assets/_Project/Scripts/ObjectPool.cs:54>
+		RuntimeObject* L_16 = V_0;
+		return L_16;
 	}
 }
-// Method Definition Index: 77905
+// Method Definition Index: 77499
 IL2CPP_EXTERN_C IL2CPP_METHOD_ATTR RuntimeObject* ObjectPool_1_Get_mFE433CF536EA8B017EEC8F9A51C3C7A0DC7EA7F2_gshared (ObjectPool_1_tA50B57B65E34413AE66CE47788639071A023F756* __this, Vector3_t24C512C7B96BBABAD472002D0BA2BDA40A5A80B2 ___0_position, Quaternion_tDA59F214EF07D7700B26E40E562F267AF7306974 ___1_rotation, const RuntimeMethod* method) 
 {
 	static bool s_Il2CppMethodInitialized;
@@ -19822,8 +19824,8 @@ IL2CPP_EXTERN_C IL2CPP_METHOD_ATTR RuntimeObject* ObjectPool_1_Get_mFE433CF536EA
 	{
 		il2cpp_codegen_initialize_runtime_metadata((uintptr_t*)&Debug_t8394C7EEAECA3689C2C9B9DE9C7166D73596276F_il2cpp_TypeInfo_var);
 		il2cpp_codegen_initialize_runtime_metadata((uintptr_t*)&IPoolable_t2C5ED5DE9F5BDAC95D1DF455E1F86A8555AC8A1C_il2cpp_TypeInfo_var);
-		il2cpp_codegen_initialize_runtime_metadata((uintptr_t*)&_stringLiteral25857502A182940B84B0CBF6AB7079B7AE481896);
-		il2cpp_codegen_initialize_runtime_metadata((uintptr_t*)&_stringLiteral60F5AFCC83105FAD09A246F9CA35959D2AE6FF22);
+		il2cpp_codegen_initialize_runtime_metadata((uintptr_t*)&_stringLiteral13C8C4777681DDCCF3BEA90DACA863BBF655AE50);
+		il2cpp_codegen_initialize_runtime_metadata((uintptr_t*)&_stringLiteral3D2880849351A195E740A316AA3222631597FC61);
 		s_Il2CppMethodInitialized = true;
 	}
 	RuntimeObject* V_0 = NULL;
@@ -19831,8 +19833,8 @@ IL2CPP_EXTERN_C IL2CPP_METHOD_ATTR RuntimeObject* ObjectPool_1_Get_mFE433CF536EA
 	RuntimeObject* G_B5_0 = NULL;
 	RuntimeObject* G_B4_0 = NULL;
 	{
-		//<source_info:C:/Users/MSI/Documents/Survival_Shooter/Assets/_Project/Scripts/ObjectPool.cs:71>
-		Stack_1_tAD790A47551563636908E21E4F08C54C0C323EB5* L_0 = __this->____inactive;
+		//<source_info:C:/Users/MSI/Documents/Survival_Shooter/Assets/_Project/Scripts/ObjectPool.cs:60>
+		Stack_1_tAD790A47551563636908E21E4F08C54C0C323EB5* L_0 = __this->___free;
 		NullCheck(L_0);
 		int32_t L_1;
 		L_1 = Stack_1_get_Count_mD08AE71D49787D30DDD9D484BCD323D646744D2E_inline(L_0, il2cpp_rgctx_method(method->klass->rgctx_data, 15));
@@ -19842,8 +19844,8 @@ IL2CPP_EXTERN_C IL2CPP_METHOD_ATTR RuntimeObject* ObjectPool_1_Get_mFE433CF536EA
 		}
 	}
 	{
-		//<source_info:C:/Users/MSI/Documents/Survival_Shooter/Assets/_Project/Scripts/ObjectPool.cs:73>
-		Stack_1_tAD790A47551563636908E21E4F08C54C0C323EB5* L_2 = __this->____inactive;
+		//<source_info:C:/Users/MSI/Documents/Survival_Shooter/Assets/_Project/Scripts/ObjectPool.cs:62>
+		Stack_1_tAD790A47551563636908E21E4F08C54C0C323EB5* L_2 = __this->___free;
 		NullCheck(L_2);
 		RuntimeObject* L_3;
 		L_3 = Stack_1_Pop_m2AFF69249659372F07EE25817DBCAFE74E1CF778(L_2, il2cpp_rgctx_method(method->klass->rgctx_data, 16));
@@ -19853,28 +19855,28 @@ IL2CPP_EXTERN_C IL2CPP_METHOD_ATTR RuntimeObject* ObjectPool_1_Get_mFE433CF536EA
 
 IL_001c:
 	{
-		//<source_info:C:/Users/MSI/Documents/Survival_Shooter/Assets/_Project/Scripts/ObjectPool.cs:77>
+		//<source_info:C:/Users/MSI/Documents/Survival_Shooter/Assets/_Project/Scripts/ObjectPool.cs:66>
 		int32_t L_4;
-		L_4 = ObjectPool_1_get_GrowCount_m85DCAEF346653AE796D2C3FE8F76B9AF23B0431B_inline(__this, il2cpp_rgctx_method(method->klass->rgctx_data, 17));
+		L_4 = ObjectPool_1_get_Grown_m7DD8265B158B610A971E9A79B6276685A2D7FAC0_inline(__this, il2cpp_rgctx_method(method->klass->rgctx_data, 17));
 		V_1 = L_4;
 		int32_t L_5 = V_1;
-		ObjectPool_1_set_GrowCount_m77E7FBB9854CE680DA0C01111481DDD32BC4F9B2_inline(__this, ((int32_t)il2cpp_codegen_add(L_5, 1)), il2cpp_rgctx_method(method->klass->rgctx_data, 18));
-		//<source_info:C:/Users/MSI/Documents/Survival_Shooter/Assets/_Project/Scripts/ObjectPool.cs:78>
+		ObjectPool_1_set_Grown_m4ABF8B19CF45EEDBBF1BE5BB9216249DDBC4E41A_inline(__this, ((int32_t)il2cpp_codegen_add(L_5, 1)), il2cpp_rgctx_method(method->klass->rgctx_data, 18));
+		//<source_info:C:/Users/MSI/Documents/Survival_Shooter/Assets/_Project/Scripts/ObjectPool.cs:67>
 		String_t* L_6;
 		L_6 = ObjectPool_1_get_Name_m713EB009111519AF6D375A8BA30C80094C204109_inline(__this, il2cpp_rgctx_method(method->klass->rgctx_data, 19));
 		String_t* L_7;
-		L_7 = String_Concat_m8855A6DE10F84DA7F4EC113CADDB59873A25573B(_stringLiteral25857502A182940B84B0CBF6AB7079B7AE481896, L_6, _stringLiteral60F5AFCC83105FAD09A246F9CA35959D2AE6FF22, NULL);
+		L_7 = String_Concat_m8855A6DE10F84DA7F4EC113CADDB59873A25573B(_stringLiteral3D2880849351A195E740A316AA3222631597FC61, L_6, _stringLiteral13C8C4777681DDCCF3BEA90DACA863BBF655AE50, NULL);
 		il2cpp_codegen_runtime_class_init_inline(Debug_t8394C7EEAECA3689C2C9B9DE9C7166D73596276F_il2cpp_TypeInfo_var);
 		Debug_LogWarning_m33EF1B897E0C7C6FF538989610BFAFFEF4628CA9((RuntimeObject*)L_7, NULL);
-		//<source_info:C:/Users/MSI/Documents/Survival_Shooter/Assets/_Project/Scripts/ObjectPool.cs:79>
+		//<source_info:C:/Users/MSI/Documents/Survival_Shooter/Assets/_Project/Scripts/ObjectPool.cs:68>
 		RuntimeObject* L_8;
-		L_8 = ObjectPool_1_CreateInstance_m92B0814C1C81692179A19523F2C4AD7E72B3786A(__this, il2cpp_rgctx_method(method->klass->rgctx_data, 9));
+		L_8 = ObjectPool_1_Create_mC76482DAC95714C03BF34D6CEB547E219C53E20D(__this, il2cpp_rgctx_method(method->klass->rgctx_data, 9));
 		V_0 = L_8;
 	}
 
 IL_004d:
 	{
-		//<source_info:C:/Users/MSI/Documents/Survival_Shooter/Assets/_Project/Scripts/ObjectPool.cs:82>
+		//<source_info:C:/Users/MSI/Documents/Survival_Shooter/Assets/_Project/Scripts/ObjectPool.cs:71>
 		RuntimeObject* L_9 = V_0;
 		NullCheck((Component_t39FBE53E5EFCF4409111FB22C15FF73717632EC3*)L_9);
 		Transform_tB27202C6F4E36D225EE28A13E4D662BF99785DB1* L_10;
@@ -19883,19 +19885,19 @@ IL_004d:
 		Quaternion_tDA59F214EF07D7700B26E40E562F267AF7306974 L_12 = ___1_rotation;
 		NullCheck(L_10);
 		Transform_SetPositionAndRotation_m418859BF59086EEAA084FFD6F258A43FAB408F5A(L_10, L_11, L_12, NULL);
-		//<source_info:C:/Users/MSI/Documents/Survival_Shooter/Assets/_Project/Scripts/ObjectPool.cs:83>
+		//<source_info:C:/Users/MSI/Documents/Survival_Shooter/Assets/_Project/Scripts/ObjectPool.cs:72>
 		RuntimeObject* L_13 = V_0;
 		NullCheck((Component_t39FBE53E5EFCF4409111FB22C15FF73717632EC3*)L_13);
 		GameObject_t76FEDD663AB33C991A9C9A23129337651094216F* L_14;
 		L_14 = Component_get_gameObject_m57AEFBB14DB39EC476F740BA000E170355DE691B((Component_t39FBE53E5EFCF4409111FB22C15FF73717632EC3*)L_13, NULL);
 		NullCheck(L_14);
 		GameObject_SetActive_m638E92E1E75E519E5B24CF150B08CA8E0CDFAB92(L_14, (bool)1, NULL);
-		//<source_info:C:/Users/MSI/Documents/Survival_Shooter/Assets/_Project/Scripts/ObjectPool.cs:84>
-		List_1_tA239CB83DE5615F348BB0507E45F490F4F7C9A8D* L_15 = __this->____active;
+		//<source_info:C:/Users/MSI/Documents/Survival_Shooter/Assets/_Project/Scripts/ObjectPool.cs:73>
+		List_1_tA239CB83DE5615F348BB0507E45F490F4F7C9A8D* L_15 = __this->___used;
 		RuntimeObject* L_16 = V_0;
 		NullCheck(L_15);
 		List_1_Add_mEBCF994CC3814631017F46A387B1A192ED6C85C7_inline(L_15, L_16, il2cpp_rgctx_method(method->klass->rgctx_data, 20));
-		//<source_info:C:/Users/MSI/Documents/Survival_Shooter/Assets/_Project/Scripts/ObjectPool.cs:85>
+		//<source_info:C:/Users/MSI/Documents/Survival_Shooter/Assets/_Project/Scripts/ObjectPool.cs:74>
 		RuntimeObject* L_17 = V_0;
 		RuntimeObject* L_18 = ((RuntimeObject*)IsInst((RuntimeObject*)L_17, IPoolable_t2C5ED5DE9F5BDAC95D1DF455E1F86A8555AC8A1C_il2cpp_TypeInfo_var));
 		if (L_18)
@@ -19917,13 +19919,13 @@ IL_008d:
 
 IL_0092:
 	{
-		//<source_info:C:/Users/MSI/Documents/Survival_Shooter/Assets/_Project/Scripts/ObjectPool.cs:86>
+		//<source_info:C:/Users/MSI/Documents/Survival_Shooter/Assets/_Project/Scripts/ObjectPool.cs:75>
 		RuntimeObject* L_19 = V_0;
 		return L_19;
 	}
 }
-// Method Definition Index: 77906
-IL2CPP_EXTERN_C IL2CPP_METHOD_ATTR void ObjectPool_1_Release_m190DDD645D47935DE36829EEDB8CF777D5D6AF8C_gshared (ObjectPool_1_tA50B57B65E34413AE66CE47788639071A023F756* __this, RuntimeObject* ___0_item, const RuntimeMethod* method) 
+// Method Definition Index: 77500
+IL2CPP_EXTERN_C IL2CPP_METHOD_ATTR void ObjectPool_1_Return_mAEFC36954518FA55F7B752C575A99E9790076F6B_gshared (ObjectPool_1_tA50B57B65E34413AE66CE47788639071A023F756* __this, RuntimeObject* ___0_item, const RuntimeMethod* method) 
 {
 	static bool s_Il2CppMethodInitialized;
 	if (!s_Il2CppMethodInitialized)
@@ -19935,7 +19937,7 @@ IL2CPP_EXTERN_C IL2CPP_METHOD_ATTR void ObjectPool_1_Release_m190DDD645D47935DE3
 	RuntimeObject* G_B5_0 = NULL;
 	RuntimeObject* G_B4_0 = NULL;
 	{
-		//<source_info:C:/Users/MSI/Documents/Survival_Shooter/Assets/_Project/Scripts/ObjectPool.cs:92>
+		//<source_info:C:/Users/MSI/Documents/Survival_Shooter/Assets/_Project/Scripts/ObjectPool.cs:80>
 		RuntimeObject* L_0 = ___0_item;
 		il2cpp_codegen_runtime_class_init_inline(Object_tC12DECB6760A7F2CBF65D9DCF18D044C2D97152C_il2cpp_TypeInfo_var);
 		bool L_1;
@@ -19946,7 +19948,7 @@ IL2CPP_EXTERN_C IL2CPP_METHOD_ATTR void ObjectPool_1_Release_m190DDD645D47935DE3
 		}
 	}
 	{
-		List_1_tA239CB83DE5615F348BB0507E45F490F4F7C9A8D* L_2 = __this->____active;
+		List_1_tA239CB83DE5615F348BB0507E45F490F4F7C9A8D* L_2 = __this->___used;
 		RuntimeObject* L_3 = ___0_item;
 		NullCheck(L_2);
 		bool L_4;
@@ -19959,13 +19961,13 @@ IL2CPP_EXTERN_C IL2CPP_METHOD_ATTR void ObjectPool_1_Release_m190DDD645D47935DE3
 
 IL_001c:
 	{
-		//<source_info:C:/Users/MSI/Documents/Survival_Shooter/Assets/_Project/Scripts/ObjectPool.cs:92>
+		//<source_info:C:/Users/MSI/Documents/Survival_Shooter/Assets/_Project/Scripts/ObjectPool.cs:80>
 		return;
 	}
 
 IL_001d:
 	{
-		//<source_info:C:/Users/MSI/Documents/Survival_Shooter/Assets/_Project/Scripts/ObjectPool.cs:93>
+		//<source_info:C:/Users/MSI/Documents/Survival_Shooter/Assets/_Project/Scripts/ObjectPool.cs:81>
 		RuntimeObject* L_5 = ___0_item;
 		RuntimeObject* L_6 = ((RuntimeObject*)IsInst((RuntimeObject*)L_5, IPoolable_t2C5ED5DE9F5BDAC95D1DF455E1F86A8555AC8A1C_il2cpp_TypeInfo_var));
 		if (L_6)
@@ -19987,15 +19989,15 @@ IL_002e:
 
 IL_0033:
 	{
-		//<source_info:C:/Users/MSI/Documents/Survival_Shooter/Assets/_Project/Scripts/ObjectPool.cs:94>
+		//<source_info:C:/Users/MSI/Documents/Survival_Shooter/Assets/_Project/Scripts/ObjectPool.cs:82>
 		RuntimeObject* L_7 = ___0_item;
 		NullCheck((Component_t39FBE53E5EFCF4409111FB22C15FF73717632EC3*)L_7);
 		GameObject_t76FEDD663AB33C991A9C9A23129337651094216F* L_8;
 		L_8 = Component_get_gameObject_m57AEFBB14DB39EC476F740BA000E170355DE691B((Component_t39FBE53E5EFCF4409111FB22C15FF73717632EC3*)L_7, NULL);
 		NullCheck(L_8);
 		GameObject_SetActive_m638E92E1E75E519E5B24CF150B08CA8E0CDFAB92(L_8, (bool)0, NULL);
-		//<source_info:C:/Users/MSI/Documents/Survival_Shooter/Assets/_Project/Scripts/ObjectPool.cs:95>
-		Transform_tB27202C6F4E36D225EE28A13E4D662BF99785DB1* L_9 = __this->____parent;
+		//<source_info:C:/Users/MSI/Documents/Survival_Shooter/Assets/_Project/Scripts/ObjectPool.cs:83>
+		Transform_tB27202C6F4E36D225EE28A13E4D662BF99785DB1* L_9 = __this->___parent;
 		il2cpp_codegen_runtime_class_init_inline(Object_tC12DECB6760A7F2CBF65D9DCF18D044C2D97152C_il2cpp_TypeInfo_var);
 		bool L_10;
 		L_10 = Object_op_Inequality_mD0BE578448EAA61948F25C32F8DD55AB1F778602((Object_tC12DECB6760A7F2CBF65D9DCF18D044C2D97152C*)L_9, (Object_tC12DECB6760A7F2CBF65D9DCF18D044C2D97152C*)NULL, NULL);
@@ -20012,7 +20014,7 @@ IL_0033:
 		NullCheck(L_12);
 		Transform_tB27202C6F4E36D225EE28A13E4D662BF99785DB1* L_13;
 		L_13 = Transform_get_parent_m65354E28A4C94EC00EBCF03532F7B0718380791E(L_12, NULL);
-		Transform_tB27202C6F4E36D225EE28A13E4D662BF99785DB1* L_14 = __this->____parent;
+		Transform_tB27202C6F4E36D225EE28A13E4D662BF99785DB1* L_14 = __this->___parent;
 		il2cpp_codegen_runtime_class_init_inline(Object_tC12DECB6760A7F2CBF65D9DCF18D044C2D97152C_il2cpp_TypeInfo_var);
 		bool L_15;
 		L_15 = Object_op_Inequality_mD0BE578448EAA61948F25C32F8DD55AB1F778602((Object_tC12DECB6760A7F2CBF65D9DCF18D044C2D97152C*)L_13, (Object_tC12DECB6760A7F2CBF65D9DCF18D044C2D97152C*)L_14, NULL);
@@ -20022,34 +20024,34 @@ IL_0033:
 		}
 	}
 	{
-		//<source_info:C:/Users/MSI/Documents/Survival_Shooter/Assets/_Project/Scripts/ObjectPool.cs:96>
+		//<source_info:C:/Users/MSI/Documents/Survival_Shooter/Assets/_Project/Scripts/ObjectPool.cs:84>
 		RuntimeObject* L_16 = ___0_item;
 		NullCheck((Component_t39FBE53E5EFCF4409111FB22C15FF73717632EC3*)L_16);
 		Transform_tB27202C6F4E36D225EE28A13E4D662BF99785DB1* L_17;
 		L_17 = Component_get_transform_m2919A1D81931E6932C7F06D4C2F0AB8DDA9A5371((Component_t39FBE53E5EFCF4409111FB22C15FF73717632EC3*)L_16, NULL);
-		Transform_tB27202C6F4E36D225EE28A13E4D662BF99785DB1* L_18 = __this->____parent;
+		Transform_tB27202C6F4E36D225EE28A13E4D662BF99785DB1* L_18 = __this->___parent;
 		NullCheck(L_17);
 		Transform_SetParent_m9BDD7B7476714B2D7919B10BDC22CE75C0A0A195(L_17, L_18, (bool)0, NULL);
 	}
 
 IL_0086:
 	{
-		//<source_info:C:/Users/MSI/Documents/Survival_Shooter/Assets/_Project/Scripts/ObjectPool.cs:97>
-		Stack_1_tAD790A47551563636908E21E4F08C54C0C323EB5* L_19 = __this->____inactive;
+		//<source_info:C:/Users/MSI/Documents/Survival_Shooter/Assets/_Project/Scripts/ObjectPool.cs:85>
+		Stack_1_tAD790A47551563636908E21E4F08C54C0C323EB5* L_19 = __this->___free;
 		RuntimeObject* L_20 = ___0_item;
 		NullCheck(L_19);
 		Stack_1_Push_m709DD11BC1291A905814182CF9A367DE7399A778(L_19, L_20, il2cpp_rgctx_method(method->klass->rgctx_data, 10));
-		//<source_info:C:/Users/MSI/Documents/Survival_Shooter/Assets/_Project/Scripts/ObjectPool.cs:98>
+		//<source_info:C:/Users/MSI/Documents/Survival_Shooter/Assets/_Project/Scripts/ObjectPool.cs:86>
 		return;
 	}
 }
-// Method Definition Index: 77907
-IL2CPP_EXTERN_C IL2CPP_METHOD_ATTR void ObjectPool_1_ReleaseAll_m6A7BD5D81437BF0C66DE8FF57A640C9A214EAD7C_gshared (ObjectPool_1_tA50B57B65E34413AE66CE47788639071A023F756* __this, const RuntimeMethod* method) 
+// Method Definition Index: 77501
+IL2CPP_EXTERN_C IL2CPP_METHOD_ATTR void ObjectPool_1_ReturnAll_m38ECDC0DF71BEA565A929123613ADAD285019EFA_gshared (ObjectPool_1_tA50B57B65E34413AE66CE47788639071A023F756* __this, const RuntimeMethod* method) 
 {
 	int32_t V_0 = 0;
 	{
-		//<source_info:C:/Users/MSI/Documents/Survival_Shooter/Assets/_Project/Scripts/ObjectPool.cs:102>
-		List_1_tA239CB83DE5615F348BB0507E45F490F4F7C9A8D* L_0 = __this->____active;
+		//<source_info:C:/Users/MSI/Documents/Survival_Shooter/Assets/_Project/Scripts/ObjectPool.cs:90>
+		List_1_tA239CB83DE5615F348BB0507E45F490F4F7C9A8D* L_0 = __this->___used;
 		NullCheck(L_0);
 		int32_t L_1;
 		L_1 = List_1_get_Count_m4407E4C389F22B8CEC282C15D56516658746C383_inline(L_0, il2cpp_rgctx_method(method->klass->rgctx_data, 2));
@@ -20059,21 +20061,21 @@ IL2CPP_EXTERN_C IL2CPP_METHOD_ATTR void ObjectPool_1_ReleaseAll_m6A7BD5D81437BF0
 
 IL_0010:
 	{
-		//<source_info:C:/Users/MSI/Documents/Survival_Shooter/Assets/_Project/Scripts/ObjectPool.cs:103>
-		List_1_tA239CB83DE5615F348BB0507E45F490F4F7C9A8D* L_2 = __this->____active;
+		//<source_info:C:/Users/MSI/Documents/Survival_Shooter/Assets/_Project/Scripts/ObjectPool.cs:91>
+		List_1_tA239CB83DE5615F348BB0507E45F490F4F7C9A8D* L_2 = __this->___used;
 		int32_t L_3 = V_0;
 		NullCheck(L_2);
 		RuntimeObject* L_4;
 		L_4 = List_1_get_Item_m33561245D64798C2AB07584C0EC4F240E4839A38(L_2, L_3, il2cpp_rgctx_method(method->klass->rgctx_data, 22));
-		ObjectPool_1_Release_m190DDD645D47935DE36829EEDB8CF777D5D6AF8C(__this, L_4, il2cpp_rgctx_method(method->klass->rgctx_data, 23));
-		//<source_info:C:/Users/MSI/Documents/Survival_Shooter/Assets/_Project/Scripts/ObjectPool.cs:102>
+		ObjectPool_1_Return_mAEFC36954518FA55F7B752C575A99E9790076F6B(__this, L_4, il2cpp_rgctx_method(method->klass->rgctx_data, 23));
+		//<source_info:C:/Users/MSI/Documents/Survival_Shooter/Assets/_Project/Scripts/ObjectPool.cs:90>
 		int32_t L_5 = V_0;
 		V_0 = ((int32_t)il2cpp_codegen_subtract(L_5, 1));
 	}
 
 IL_0026:
 	{
-		//<source_info:C:/Users/MSI/Documents/Survival_Shooter/Assets/_Project/Scripts/ObjectPool.cs:102>
+		//<source_info:C:/Users/MSI/Documents/Survival_Shooter/Assets/_Project/Scripts/ObjectPool.cs:90>
 		int32_t L_6 = V_0;
 		if ((((int32_t)L_6) >= ((int32_t)0)))
 		{
@@ -20081,7 +20083,7 @@ IL_0026:
 		}
 	}
 	{
-		//<source_info:C:/Users/MSI/Documents/Survival_Shooter/Assets/_Project/Scripts/ObjectPool.cs:104>
+		//<source_info:C:/Users/MSI/Documents/Survival_Shooter/Assets/_Project/Scripts/ObjectPool.cs:92>
 		return;
 	}
 }
@@ -20093,7 +20095,7 @@ IL_0026:
 #pragma clang diagnostic ignored "-Winvalid-offsetof"
 #pragma clang diagnostic ignored "-Wunused-variable"
 #endif
-// Method Definition Index: 78342
+// Method Definition Index: 78389
 IL2CPP_EXTERN_C IL2CPP_METHOD_ATTR RuntimeObject* ObjectPool_1_Get_mA70DC1D446328CC9348C978D336040431B6F5556_gshared (ObjectPool_1_t5CA62287848708B8D68392BCCE588043914E94EC* __this, const RuntimeMethod* method) 
 {
 	{
@@ -20122,7 +20124,7 @@ IL_0019:
 		return L_4;
 	}
 }
-// Method Definition Index: 78343
+// Method Definition Index: 78390
 IL2CPP_EXTERN_C IL2CPP_METHOD_ATTR void ObjectPool_1_Recycle_m6E0ED9D8784D59537674ECBA92C5A0A66D2DDA1D_gshared (ObjectPool_1_t5CA62287848708B8D68392BCCE588043914E94EC* __this, RuntimeObject* ___0_instance, const RuntimeMethod* method) 
 {
 	{
@@ -20138,7 +20140,7 @@ IL2CPP_EXTERN_C IL2CPP_METHOD_ATTR void ObjectPool_1_Recycle_m6E0ED9D8784D595376
 		return;
 	}
 }
-// Method Definition Index: 78344
+// Method Definition Index: 78391
 IL2CPP_EXTERN_C IL2CPP_METHOD_ATTR void ObjectPool_1_ClearInstance_m5A9B7845B8E4F9F1DFD09F31B1F78AA03468C1D9_gshared (ObjectPool_1_t5CA62287848708B8D68392BCCE588043914E94EC* __this, RuntimeObject* ___0_instance, const RuntimeMethod* method) 
 {
 	{
@@ -20146,7 +20148,7 @@ IL2CPP_EXTERN_C IL2CPP_METHOD_ATTR void ObjectPool_1_ClearInstance_m5A9B7845B8E4
 		return;
 	}
 }
-// Method Definition Index: 78345
+// Method Definition Index: 78392
 IL2CPP_EXTERN_C IL2CPP_METHOD_ATTR void ObjectPool_1__ctor_mBE7BA29F9262D732C645EC44594E8CC9FB4EAE01_gshared (ObjectPool_1_t5CA62287848708B8D68392BCCE588043914E94EC* __this, const RuntimeMethod* method) 
 {
 	{
@@ -20167,7 +20169,7 @@ IL2CPP_EXTERN_C IL2CPP_METHOD_ATTR void ObjectPool_1__ctor_mBE7BA29F9262D732C645
 #pragma clang diagnostic ignored "-Winvalid-offsetof"
 #pragma clang diagnostic ignored "-Wunused-variable"
 #endif
-// Method Definition Index: 44898
+// Method Definition Index: 44902
 IL2CPP_EXTERN_C IL2CPP_METHOD_ATTR int32_t ObjectPool_1_get_CountAll_mF3CDC0B64D5037106573C6CEE921EAF0A8B3C8EB_gshared (ObjectPool_1_t13378E8CD14858BB05EA28BAB9CC49EDB91BA259* __this, const RuntimeMethod* method) 
 {
 	{
@@ -20175,7 +20177,7 @@ IL2CPP_EXTERN_C IL2CPP_METHOD_ATTR int32_t ObjectPool_1_get_CountAll_mF3CDC0B64D
 		return L_0;
 	}
 }
-// Method Definition Index: 44899
+// Method Definition Index: 44903
 IL2CPP_EXTERN_C IL2CPP_METHOD_ATTR void ObjectPool_1_set_CountAll_mED1939CDEBB184383799328A0C1AEC9E1D2960D9_gshared (ObjectPool_1_t13378E8CD14858BB05EA28BAB9CC49EDB91BA259* __this, int32_t ___0_value, const RuntimeMethod* method) 
 {
 	{
@@ -20184,7 +20186,7 @@ IL2CPP_EXTERN_C IL2CPP_METHOD_ATTR void ObjectPool_1_set_CountAll_mED1939CDEBB18
 		return;
 	}
 }
-// Method Definition Index: 44900
+// Method Definition Index: 44904
 IL2CPP_EXTERN_C IL2CPP_METHOD_ATTR int32_t ObjectPool_1_get_CountInactive_m9A907BFCDCBFE910B784BDBF71EEDC6D14C90608_gshared (ObjectPool_1_t13378E8CD14858BB05EA28BAB9CC49EDB91BA259* __this, const RuntimeMethod* method) 
 {
 	{
@@ -20196,7 +20198,7 @@ IL2CPP_EXTERN_C IL2CPP_METHOD_ATTR int32_t ObjectPool_1_get_CountInactive_m9A907
 		return ((int32_t)il2cpp_codegen_add(L_1, ((!(((RuntimeObject*)(RuntimeObject*)L_2) <= ((RuntimeObject*)(RuntimeObject*)NULL)))? 1 : 0)));
 	}
 }
-// Method Definition Index: 44901
+// Method Definition Index: 44905
 IL2CPP_EXTERN_C IL2CPP_METHOD_ATTR void ObjectPool_1__ctor_m4CED6C10E611A3CC63F3CF84423C183C1412177F_gshared (ObjectPool_1_t13378E8CD14858BB05EA28BAB9CC49EDB91BA259* __this, Func_1_tD5C081AE11746B200C711DD48DBEB00E3A9276D4* ___0_createFunc, Action_1_t6F9EB113EB3F16226AEF811A2744F4111C116C87* ___1_actionOnGet, Action_1_t6F9EB113EB3F16226AEF811A2744F4111C116C87* ___2_actionOnRelease, Action_1_t6F9EB113EB3F16226AEF811A2744F4111C116C87* ___3_actionOnDestroy, bool ___4_collectionCheck, int32_t ___5_defaultCapacity, int32_t ___6_maxSize, const RuntimeMethod* method) 
 {
 	static bool s_Il2CppMethodInitialized;
@@ -20261,7 +20263,7 @@ IL_0029:
 		return;
 	}
 }
-// Method Definition Index: 44902
+// Method Definition Index: 44906
 IL2CPP_EXTERN_C IL2CPP_METHOD_ATTR RuntimeObject* ObjectPool_1_Get_m239BB169D8FEF3A2694E9A961C473D3807D67D89_gshared (ObjectPool_1_t13378E8CD14858BB05EA28BAB9CC49EDB91BA259* __this, const RuntimeMethod* method) 
 {
 	RuntimeObject* V_0 = NULL;
@@ -20356,7 +20358,7 @@ IL_0086:
 		return L_19;
 	}
 }
-// Method Definition Index: 44903
+// Method Definition Index: 44907
 IL2CPP_EXTERN_C IL2CPP_METHOD_ATTR PooledObject_1_tAA91CAE93DC8A19E0A5B6C1D78C3AE149F635F8E ObjectPool_1_Get_mA3CFEEAE86290AD1A6483559E325E9F339AFD9F9_gshared (ObjectPool_1_t13378E8CD14858BB05EA28BAB9CC49EDB91BA259* __this, RuntimeObject** ___0_v, const RuntimeMethod* method) 
 {
 	RuntimeObject* V_0 = NULL;
@@ -20375,7 +20377,7 @@ IL2CPP_EXTERN_C IL2CPP_METHOD_ATTR PooledObject_1_tAA91CAE93DC8A19E0A5B6C1D78C3A
 		return L_4;
 	}
 }
-// Method Definition Index: 44904
+// Method Definition Index: 44908
 IL2CPP_EXTERN_C IL2CPP_METHOD_ATTR void ObjectPool_1_Release_m71F1CADB7AD9CC20BD824583A3675A4260965DB5_gshared (ObjectPool_1_t13378E8CD14858BB05EA28BAB9CC49EDB91BA259* __this, RuntimeObject* ___0_element, const RuntimeMethod* method) 
 {
 	int32_t V_0 = 0;
@@ -20465,7 +20467,7 @@ IL_005d:
 		return;
 	}
 }
-// Method Definition Index: 44905
+// Method Definition Index: 44909
 IL2CPP_EXTERN_C IL2CPP_METHOD_ATTR void ObjectPool_1_Clear_m1AA2CCDA1BA91BB58C5A4578B03502A034811E4E_gshared (ObjectPool_1_t13378E8CD14858BB05EA28BAB9CC49EDB91BA259* __this, const RuntimeMethod* method) 
 {
 	Enumerator_t9473BAB568A27E2339D48C1F91319E0F6D244D7A V_0;
@@ -20557,7 +20559,7 @@ IL_0061:
 		return;
 	}
 }
-// Method Definition Index: 44906
+// Method Definition Index: 44910
 IL2CPP_EXTERN_C IL2CPP_METHOD_ATTR void ObjectPool_1_Dispose_m538318A6FF6ED73FAC8994C4365B1ADF51B66FE9_gshared (ObjectPool_1_t13378E8CD14858BB05EA28BAB9CC49EDB91BA259* __this, const RuntimeMethod* method) 
 {
 	{
@@ -23560,7 +23562,7 @@ IL2CPP_EXTERN_C  RuntimeObject* OneOrMore_2_System_Collections_IEnumerable_GetEn
 #pragma clang diagnostic ignored "-Winvalid-offsetof"
 #pragma clang diagnostic ignored "-Wunused-variable"
 #endif
-// Method Definition Index: 81815
+// Method Definition Index: 81862
 IL2CPP_EXTERN_C IL2CPP_METHOD_ATTR RuntimeObject* OrderedEnumerable_1_GetEnumerator_m32A688D4C046E9B02F40BACFCABBA73E90A98C3C_gshared (OrderedEnumerable_1_t8EEABC87399C51697FF13CC459FC26CA5A5857DA* __this, const RuntimeMethod* method) 
 {
 	{
@@ -23573,7 +23575,7 @@ IL2CPP_EXTERN_C IL2CPP_METHOD_ATTR RuntimeObject* OrderedEnumerable_1_GetEnumera
 		return (RuntimeObject*)L_1;
 	}
 }
-// Method Definition Index: 81817
+// Method Definition Index: 81864
 IL2CPP_EXTERN_C IL2CPP_METHOD_ATTR RuntimeObject* OrderedEnumerable_1_System_Collections_IEnumerable_GetEnumerator_m756F167C52435CCA8936EB53523A77ECFED07EA2_gshared (OrderedEnumerable_1_t8EEABC87399C51697FF13CC459FC26CA5A5857DA* __this, const RuntimeMethod* method) 
 {
 	{
@@ -23582,7 +23584,7 @@ IL2CPP_EXTERN_C IL2CPP_METHOD_ATTR RuntimeObject* OrderedEnumerable_1_System_Col
 		return (RuntimeObject*)L_0;
 	}
 }
-// Method Definition Index: 81819
+// Method Definition Index: 81866
 IL2CPP_EXTERN_C IL2CPP_METHOD_ATTR void OrderedEnumerable_1__ctor_m1A02F96CCFE23245000C42454F5C84C90A5224B6_gshared (OrderedEnumerable_1_t8EEABC87399C51697FF13CC459FC26CA5A5857DA* __this, const RuntimeMethod* method) 
 {
 	{
@@ -23598,7 +23600,7 @@ IL2CPP_EXTERN_C IL2CPP_METHOD_ATTR void OrderedEnumerable_1__ctor_m1A02F96CCFE23
 #pragma clang diagnostic ignored "-Winvalid-offsetof"
 #pragma clang diagnostic ignored "-Wunused-variable"
 #endif
-// Method Definition Index: 81815
+// Method Definition Index: 81862
 IL2CPP_EXTERN_C IL2CPP_METHOD_ATTR RuntimeObject* OrderedEnumerable_1_GetEnumerator_m8DBBEAD2E263A160E873BCAA927DEF146F248CD0_gshared (OrderedEnumerable_1_t49A81D3EAEB40201506836E577654DE2F8EC8941* __this, const RuntimeMethod* method) 
 {
 	{
@@ -23611,7 +23613,7 @@ IL2CPP_EXTERN_C IL2CPP_METHOD_ATTR RuntimeObject* OrderedEnumerable_1_GetEnumera
 		return (RuntimeObject*)L_1;
 	}
 }
-// Method Definition Index: 81817
+// Method Definition Index: 81864
 IL2CPP_EXTERN_C IL2CPP_METHOD_ATTR RuntimeObject* OrderedEnumerable_1_System_Collections_IEnumerable_GetEnumerator_m1015291A03EDCA630C192D07284F8E0722AE26EB_gshared (OrderedEnumerable_1_t49A81D3EAEB40201506836E577654DE2F8EC8941* __this, const RuntimeMethod* method) 
 {
 	{
@@ -23620,7 +23622,7 @@ IL2CPP_EXTERN_C IL2CPP_METHOD_ATTR RuntimeObject* OrderedEnumerable_1_System_Col
 		return (RuntimeObject*)L_0;
 	}
 }
-// Method Definition Index: 81819
+// Method Definition Index: 81866
 IL2CPP_EXTERN_C IL2CPP_METHOD_ATTR void OrderedEnumerable_1__ctor_m1BDEFCB4D636A666F556BFE7479BD76D9DCD9072_gshared (OrderedEnumerable_1_t49A81D3EAEB40201506836E577654DE2F8EC8941* __this, const RuntimeMethod* method) 
 {
 	{
@@ -23636,7 +23638,7 @@ IL2CPP_EXTERN_C IL2CPP_METHOD_ATTR void OrderedEnumerable_1__ctor_m1BDEFCB4D636A
 #pragma clang diagnostic ignored "-Winvalid-offsetof"
 #pragma clang diagnostic ignored "-Wunused-variable"
 #endif
-// Method Definition Index: 81815
+// Method Definition Index: 81862
 IL2CPP_EXTERN_C IL2CPP_METHOD_ATTR RuntimeObject* OrderedEnumerable_1_GetEnumerator_mD50826B909E062E5DBAD4E67FC535419F831C036_gshared (OrderedEnumerable_1_tFFE2D41E419F999B45E7C9636190F547FE16EA00* __this, const RuntimeMethod* method) 
 {
 	{
@@ -23649,7 +23651,7 @@ IL2CPP_EXTERN_C IL2CPP_METHOD_ATTR RuntimeObject* OrderedEnumerable_1_GetEnumera
 		return (RuntimeObject*)L_1;
 	}
 }
-// Method Definition Index: 81817
+// Method Definition Index: 81864
 IL2CPP_EXTERN_C IL2CPP_METHOD_ATTR RuntimeObject* OrderedEnumerable_1_System_Collections_IEnumerable_GetEnumerator_m674534F9BEED07E2D13C504EB1DBC61995458811_gshared (OrderedEnumerable_1_tFFE2D41E419F999B45E7C9636190F547FE16EA00* __this, const RuntimeMethod* method) 
 {
 	{
@@ -23658,7 +23660,7 @@ IL2CPP_EXTERN_C IL2CPP_METHOD_ATTR RuntimeObject* OrderedEnumerable_1_System_Col
 		return (RuntimeObject*)L_0;
 	}
 }
-// Method Definition Index: 81819
+// Method Definition Index: 81866
 IL2CPP_EXTERN_C IL2CPP_METHOD_ATTR void OrderedEnumerable_1__ctor_m02D3016D28F207B300B4FFE096E5D45FFF32DE4E_gshared (OrderedEnumerable_1_tFFE2D41E419F999B45E7C9636190F547FE16EA00* __this, const RuntimeMethod* method) 
 {
 	{
@@ -23674,7 +23676,7 @@ IL2CPP_EXTERN_C IL2CPP_METHOD_ATTR void OrderedEnumerable_1__ctor_m02D3016D28F20
 #pragma clang diagnostic ignored "-Winvalid-offsetof"
 #pragma clang diagnostic ignored "-Wunused-variable"
 #endif
-// Method Definition Index: 81815
+// Method Definition Index: 81862
 IL2CPP_EXTERN_C IL2CPP_METHOD_ATTR RuntimeObject* OrderedEnumerable_1_GetEnumerator_m47CD7223D30B7E2D7FB2720F64DE16CAF1E7793C_gshared (OrderedEnumerable_1_t2CA7B89590CC51BDE981B85FB02BE2FC4175E2D6* __this, const RuntimeMethod* method) 
 {
 	{
@@ -23687,7 +23689,7 @@ IL2CPP_EXTERN_C IL2CPP_METHOD_ATTR RuntimeObject* OrderedEnumerable_1_GetEnumera
 		return (RuntimeObject*)L_1;
 	}
 }
-// Method Definition Index: 81817
+// Method Definition Index: 81864
 IL2CPP_EXTERN_C IL2CPP_METHOD_ATTR RuntimeObject* OrderedEnumerable_1_System_Collections_IEnumerable_GetEnumerator_m1B478087284F8BDD1BF149EA75505AE52970E810_gshared (OrderedEnumerable_1_t2CA7B89590CC51BDE981B85FB02BE2FC4175E2D6* __this, const RuntimeMethod* method) 
 {
 	{
@@ -23696,7 +23698,7 @@ IL2CPP_EXTERN_C IL2CPP_METHOD_ATTR RuntimeObject* OrderedEnumerable_1_System_Col
 		return (RuntimeObject*)L_0;
 	}
 }
-// Method Definition Index: 81819
+// Method Definition Index: 81866
 IL2CPP_EXTERN_C IL2CPP_METHOD_ATTR void OrderedEnumerable_1__ctor_mF3CFD5B8B579FA4CAE8679E327BC45E9493E9AF4_gshared (OrderedEnumerable_1_t2CA7B89590CC51BDE981B85FB02BE2FC4175E2D6* __this, const RuntimeMethod* method) 
 {
 	{
@@ -23712,7 +23714,7 @@ IL2CPP_EXTERN_C IL2CPP_METHOD_ATTR void OrderedEnumerable_1__ctor_mF3CFD5B8B579F
 #pragma clang diagnostic ignored "-Winvalid-offsetof"
 #pragma clang diagnostic ignored "-Wunused-variable"
 #endif
-// Method Definition Index: 81815
+// Method Definition Index: 81862
 IL2CPP_EXTERN_C IL2CPP_METHOD_ATTR RuntimeObject* OrderedEnumerable_1_GetEnumerator_m8E372F119DA686D10A52218DD5C2B84A9AA3C535_gshared (OrderedEnumerable_1_tA6269C578EE7D3423C79F32258D574795AEF1151* __this, const RuntimeMethod* method) 
 {
 	{
@@ -23725,7 +23727,7 @@ IL2CPP_EXTERN_C IL2CPP_METHOD_ATTR RuntimeObject* OrderedEnumerable_1_GetEnumera
 		return (RuntimeObject*)L_1;
 	}
 }
-// Method Definition Index: 81817
+// Method Definition Index: 81864
 IL2CPP_EXTERN_C IL2CPP_METHOD_ATTR RuntimeObject* OrderedEnumerable_1_System_Collections_IEnumerable_GetEnumerator_m44C5C1F58ED3F60B5B12D4B9CE70917D881F3F61_gshared (OrderedEnumerable_1_tA6269C578EE7D3423C79F32258D574795AEF1151* __this, const RuntimeMethod* method) 
 {
 	{
@@ -23734,7 +23736,7 @@ IL2CPP_EXTERN_C IL2CPP_METHOD_ATTR RuntimeObject* OrderedEnumerable_1_System_Col
 		return (RuntimeObject*)L_0;
 	}
 }
-// Method Definition Index: 81819
+// Method Definition Index: 81866
 IL2CPP_EXTERN_C IL2CPP_METHOD_ATTR void OrderedEnumerable_1__ctor_mB816D5E9F6CE021FAF36E9EBCBC786932FD3B487_gshared (OrderedEnumerable_1_tA6269C578EE7D3423C79F32258D574795AEF1151* __this, const RuntimeMethod* method) 
 {
 	{
@@ -23750,7 +23752,7 @@ IL2CPP_EXTERN_C IL2CPP_METHOD_ATTR void OrderedEnumerable_1__ctor_mB816D5E9F6CE0
 #pragma clang diagnostic ignored "-Winvalid-offsetof"
 #pragma clang diagnostic ignored "-Wunused-variable"
 #endif
-// Method Definition Index: 81815
+// Method Definition Index: 81862
 IL2CPP_EXTERN_C IL2CPP_METHOD_ATTR RuntimeObject* OrderedEnumerable_1_GetEnumerator_m462D09C68984095981EEBF7B4880E8E2EB2AB7D6_gshared (OrderedEnumerable_1_t635FACC705EB8D479616971CD818376DC3A5AF51* __this, const RuntimeMethod* method) 
 {
 	{
@@ -23763,7 +23765,7 @@ IL2CPP_EXTERN_C IL2CPP_METHOD_ATTR RuntimeObject* OrderedEnumerable_1_GetEnumera
 		return (RuntimeObject*)L_1;
 	}
 }
-// Method Definition Index: 81817
+// Method Definition Index: 81864
 IL2CPP_EXTERN_C IL2CPP_METHOD_ATTR RuntimeObject* OrderedEnumerable_1_System_Collections_IEnumerable_GetEnumerator_mF154234005EF69F2546226C78EFE8E4F2678199F_gshared (OrderedEnumerable_1_t635FACC705EB8D479616971CD818376DC3A5AF51* __this, const RuntimeMethod* method) 
 {
 	{
@@ -23772,7 +23774,7 @@ IL2CPP_EXTERN_C IL2CPP_METHOD_ATTR RuntimeObject* OrderedEnumerable_1_System_Col
 		return (RuntimeObject*)L_0;
 	}
 }
-// Method Definition Index: 81819
+// Method Definition Index: 81866
 IL2CPP_EXTERN_C IL2CPP_METHOD_ATTR void OrderedEnumerable_1__ctor_m8A60D502EA29F8B3165554A91F13315B2020C791_gshared (OrderedEnumerable_1_t635FACC705EB8D479616971CD818376DC3A5AF51* __this, const RuntimeMethod* method) 
 {
 	{
@@ -23788,7 +23790,7 @@ IL2CPP_EXTERN_C IL2CPP_METHOD_ATTR void OrderedEnumerable_1__ctor_m8A60D502EA29F
 #pragma clang diagnostic ignored "-Winvalid-offsetof"
 #pragma clang diagnostic ignored "-Wunused-variable"
 #endif
-// Method Definition Index: 81815
+// Method Definition Index: 81862
 IL2CPP_EXTERN_C IL2CPP_METHOD_ATTR RuntimeObject* OrderedEnumerable_1_GetEnumerator_m93BC312F79E5C88931865F01520013FDBA3B53CB_gshared (OrderedEnumerable_1_t9FC254A996960AAA55B70FA7417B36D16C123B28* __this, const RuntimeMethod* method) 
 {
 	{
@@ -23800,7 +23802,7 @@ IL2CPP_EXTERN_C IL2CPP_METHOD_ATTR RuntimeObject* OrderedEnumerable_1_GetEnumera
 		return (RuntimeObject*)L_1;
 	}
 }
-// Method Definition Index: 81817
+// Method Definition Index: 81864
 IL2CPP_EXTERN_C IL2CPP_METHOD_ATTR RuntimeObject* OrderedEnumerable_1_System_Collections_IEnumerable_GetEnumerator_mF624A687E8C0A9FB81774F671F1BEE97AD4142AA_gshared (OrderedEnumerable_1_t9FC254A996960AAA55B70FA7417B36D16C123B28* __this, const RuntimeMethod* method) 
 {
 	{
@@ -23809,7 +23811,7 @@ IL2CPP_EXTERN_C IL2CPP_METHOD_ATTR RuntimeObject* OrderedEnumerable_1_System_Col
 		return (RuntimeObject*)L_0;
 	}
 }
-// Method Definition Index: 81819
+// Method Definition Index: 81866
 IL2CPP_EXTERN_C IL2CPP_METHOD_ATTR void OrderedEnumerable_1__ctor_mC5D343D71A2C78D96D0654897B2F2D14DC2B515F_gshared (OrderedEnumerable_1_t9FC254A996960AAA55B70FA7417B36D16C123B28* __this, const RuntimeMethod* method) 
 {
 	{
@@ -23825,7 +23827,7 @@ IL2CPP_EXTERN_C IL2CPP_METHOD_ATTR void OrderedEnumerable_1__ctor_mC5D343D71A2C7
 #pragma clang diagnostic ignored "-Winvalid-offsetof"
 #pragma clang diagnostic ignored "-Wunused-variable"
 #endif
-// Method Definition Index: 81826
+// Method Definition Index: 81873
 IL2CPP_EXTERN_C IL2CPP_METHOD_ATTR void OrderedEnumerable_2__ctor_m5A5492A71F9D3F956F16D4F7B1F04BE47AC7FEB7_gshared (OrderedEnumerable_2_t7FDC122207E39C88BC86800DB007E88676C33546* __this, RuntimeObject* ___0_source, Func_2_tEDCDCD7BE3F7A4F5A742A5FD711EA63155BC825E* ___1_keySelector, RuntimeObject* ___2_comparer, bool ___3_descending, const RuntimeMethod* method) 
 {
 	RuntimeObject* V_0 = NULL;
@@ -23906,7 +23908,7 @@ IL_0045:
 		return;
 	}
 }
-// Method Definition Index: 81827
+// Method Definition Index: 81874
 IL2CPP_EXTERN_C IL2CPP_METHOD_ATTR EnumerableSorter_1_t5897E023ECB6DBE16092BDD0CD9397E8600CD0F5* OrderedEnumerable_2_GetEnumerableSorter_mBEB42669536E498DA8E120ED53E8E63894579766_gshared (OrderedEnumerable_2_t7FDC122207E39C88BC86800DB007E88676C33546* __this, EnumerableSorter_1_t5897E023ECB6DBE16092BDD0CD9397E8600CD0F5* ___0_next, const RuntimeMethod* method) 
 {
 	EnumerableSorter_1_t5897E023ECB6DBE16092BDD0CD9397E8600CD0F5* V_0 = NULL;
@@ -23947,7 +23949,7 @@ IL_002e:
 #pragma clang diagnostic ignored "-Winvalid-offsetof"
 #pragma clang diagnostic ignored "-Wunused-variable"
 #endif
-// Method Definition Index: 81826
+// Method Definition Index: 81873
 IL2CPP_EXTERN_C IL2CPP_METHOD_ATTR void OrderedEnumerable_2__ctor_mBE93BE0656C7137FCB68076DDD39D1CEB5BBB3F6_gshared (OrderedEnumerable_2_tB2BB1ECCB0DE7D81D21CB503C6E9B7434D24B9EC* __this, RuntimeObject* ___0_source, Func_2_tF8ACBB86793AC8EBB434A64BA219B2B144660DC7* ___1_keySelector, RuntimeObject* ___2_comparer, bool ___3_descending, const RuntimeMethod* method) 
 {
 	RuntimeObject* V_0 = NULL;
@@ -24028,7 +24030,7 @@ IL_0045:
 		return;
 	}
 }
-// Method Definition Index: 81827
+// Method Definition Index: 81874
 IL2CPP_EXTERN_C IL2CPP_METHOD_ATTR EnumerableSorter_1_t772456040AB1CD5F32AE1ACCF8BCBA3561A0CE67* OrderedEnumerable_2_GetEnumerableSorter_m8F390541ACF329BAA489E3D6A30C97ADBAE743B8_gshared (OrderedEnumerable_2_tB2BB1ECCB0DE7D81D21CB503C6E9B7434D24B9EC* __this, EnumerableSorter_1_t772456040AB1CD5F32AE1ACCF8BCBA3561A0CE67* ___0_next, const RuntimeMethod* method) 
 {
 	EnumerableSorter_1_t772456040AB1CD5F32AE1ACCF8BCBA3561A0CE67* V_0 = NULL;
@@ -24069,7 +24071,7 @@ IL_002e:
 #pragma clang diagnostic ignored "-Winvalid-offsetof"
 #pragma clang diagnostic ignored "-Wunused-variable"
 #endif
-// Method Definition Index: 81826
+// Method Definition Index: 81873
 IL2CPP_EXTERN_C IL2CPP_METHOD_ATTR void OrderedEnumerable_2__ctor_m0FEDB4E6B2EAC112C01BF5AC4605305543466402_gshared (OrderedEnumerable_2_t956A813D199E81970CA808468C12A778277A6692* __this, RuntimeObject* ___0_source, Func_2_tF80AFEAB653E375ACD0F49E44AE42BAE8761DB6F* ___1_keySelector, RuntimeObject* ___2_comparer, bool ___3_descending, const RuntimeMethod* method) 
 {
 	RuntimeObject* V_0 = NULL;
@@ -24150,7 +24152,7 @@ IL_0045:
 		return;
 	}
 }
-// Method Definition Index: 81827
+// Method Definition Index: 81874
 IL2CPP_EXTERN_C IL2CPP_METHOD_ATTR EnumerableSorter_1_t33B4B1FE8E6E19EEFB45A8EC216B39E6DDF2FDDD* OrderedEnumerable_2_GetEnumerableSorter_mFB0B22271AB9C064D4D52F0001A81AF2123C4E84_gshared (OrderedEnumerable_2_t956A813D199E81970CA808468C12A778277A6692* __this, EnumerableSorter_1_t33B4B1FE8E6E19EEFB45A8EC216B39E6DDF2FDDD* ___0_next, const RuntimeMethod* method) 
 {
 	EnumerableSorter_1_t33B4B1FE8E6E19EEFB45A8EC216B39E6DDF2FDDD* V_0 = NULL;
@@ -24191,7 +24193,7 @@ IL_002e:
 #pragma clang diagnostic ignored "-Winvalid-offsetof"
 #pragma clang diagnostic ignored "-Wunused-variable"
 #endif
-// Method Definition Index: 81826
+// Method Definition Index: 81873
 IL2CPP_EXTERN_C IL2CPP_METHOD_ATTR void OrderedEnumerable_2__ctor_mA4C9424073C1ADF71C6D1C4A093AFC11BFA78162_gshared (OrderedEnumerable_2_tD338B74543352DB35E19D630DBC13C34FB211F29* __this, RuntimeObject* ___0_source, Func_2_tE6D7532D9B01F3BFD1639BCA3C00C19CCA5FF609* ___1_keySelector, RuntimeObject* ___2_comparer, bool ___3_descending, const RuntimeMethod* method) 
 {
 	RuntimeObject* V_0 = NULL;
@@ -24272,7 +24274,7 @@ IL_0045:
 		return;
 	}
 }
-// Method Definition Index: 81827
+// Method Definition Index: 81874
 IL2CPP_EXTERN_C IL2CPP_METHOD_ATTR EnumerableSorter_1_tC7A6BA5636DB2028E64A6A8150BE0C33E308DBF0* OrderedEnumerable_2_GetEnumerableSorter_m30FF5F3978B71770DB34BEE36E93C491B8BF1998_gshared (OrderedEnumerable_2_tD338B74543352DB35E19D630DBC13C34FB211F29* __this, EnumerableSorter_1_tC7A6BA5636DB2028E64A6A8150BE0C33E308DBF0* ___0_next, const RuntimeMethod* method) 
 {
 	EnumerableSorter_1_tC7A6BA5636DB2028E64A6A8150BE0C33E308DBF0* V_0 = NULL;
@@ -24313,7 +24315,7 @@ IL_002e:
 #pragma clang diagnostic ignored "-Winvalid-offsetof"
 #pragma clang diagnostic ignored "-Wunused-variable"
 #endif
-// Method Definition Index: 81826
+// Method Definition Index: 81873
 IL2CPP_EXTERN_C IL2CPP_METHOD_ATTR void OrderedEnumerable_2__ctor_m74A1E4ECECDEE6443DD3588E46C32D34F3CAAAAF_gshared (OrderedEnumerable_2_tAACC54129C37109328AFDC1477A535FCF5BE8CBA* __this, RuntimeObject* ___0_source, Func_2_t7025554EC975A118D5815ACF437B2080C169F1C0* ___1_keySelector, RuntimeObject* ___2_comparer, bool ___3_descending, const RuntimeMethod* method) 
 {
 	RuntimeObject* V_0 = NULL;
@@ -24394,7 +24396,7 @@ IL_0045:
 		return;
 	}
 }
-// Method Definition Index: 81827
+// Method Definition Index: 81874
 IL2CPP_EXTERN_C IL2CPP_METHOD_ATTR EnumerableSorter_1_t4439350BEBB5B5B9E8D43BBDBB271F1DC472270B* OrderedEnumerable_2_GetEnumerableSorter_mFC39093833E00164B2C97DC64C135A9F19618975_gshared (OrderedEnumerable_2_tAACC54129C37109328AFDC1477A535FCF5BE8CBA* __this, EnumerableSorter_1_t4439350BEBB5B5B9E8D43BBDBB271F1DC472270B* ___0_next, const RuntimeMethod* method) 
 {
 	EnumerableSorter_1_t4439350BEBB5B5B9E8D43BBDBB271F1DC472270B* V_0 = NULL;
@@ -24435,7 +24437,7 @@ IL_002e:
 #pragma clang diagnostic ignored "-Winvalid-offsetof"
 #pragma clang diagnostic ignored "-Wunused-variable"
 #endif
-// Method Definition Index: 81826
+// Method Definition Index: 81873
 IL2CPP_EXTERN_C IL2CPP_METHOD_ATTR void OrderedEnumerable_2__ctor_m4431F3A473B3D54B25D0356FF817F98181A7C32F_gshared (OrderedEnumerable_2_t51517C2F0D08851F60E9DD8FB874EC339A5F2BFA* __this, RuntimeObject* ___0_source, Func_2_t9A0D493A82DCC47C9C819A3B045E02D9B5DDCE1B* ___1_keySelector, RuntimeObject* ___2_comparer, bool ___3_descending, const RuntimeMethod* method) 
 {
 	RuntimeObject* V_0 = NULL;
@@ -24516,7 +24518,7 @@ IL_0045:
 		return;
 	}
 }
-// Method Definition Index: 81827
+// Method Definition Index: 81874
 IL2CPP_EXTERN_C IL2CPP_METHOD_ATTR EnumerableSorter_1_t9DF0BF2FF3A689EB41C9CE2B42D3A91F5776B3AD* OrderedEnumerable_2_GetEnumerableSorter_mD28A618E344381E9ACCD207404369A257DFDA60A_gshared (OrderedEnumerable_2_t51517C2F0D08851F60E9DD8FB874EC339A5F2BFA* __this, EnumerableSorter_1_t9DF0BF2FF3A689EB41C9CE2B42D3A91F5776B3AD* ___0_next, const RuntimeMethod* method) 
 {
 	EnumerableSorter_1_t9DF0BF2FF3A689EB41C9CE2B42D3A91F5776B3AD* V_0 = NULL;
@@ -24557,7 +24559,7 @@ IL_002e:
 #pragma clang diagnostic ignored "-Winvalid-offsetof"
 #pragma clang diagnostic ignored "-Wunused-variable"
 #endif
-// Method Definition Index: 81826
+// Method Definition Index: 81873
 IL2CPP_EXTERN_C IL2CPP_METHOD_ATTR void OrderedEnumerable_2__ctor_m95ECD3FC3686640963CAD3DB706B668BB5C7B2DB_gshared (OrderedEnumerable_2_tA9DEFB149DAA0F612AACE71C5D5A35D6308A052D* __this, RuntimeObject* ___0_source, Func_2_tACBF5A1656250800CE861707354491F0611F6624* ___1_keySelector, RuntimeObject* ___2_comparer, bool ___3_descending, const RuntimeMethod* method) 
 {
 	RuntimeObject* V_0 = NULL;
@@ -24638,7 +24640,7 @@ IL_0045:
 		return;
 	}
 }
-// Method Definition Index: 81827
+// Method Definition Index: 81874
 IL2CPP_EXTERN_C IL2CPP_METHOD_ATTR EnumerableSorter_1_t9DF0BF2FF3A689EB41C9CE2B42D3A91F5776B3AD* OrderedEnumerable_2_GetEnumerableSorter_m6E347C85DC5EFED1D4FBF7156286800BBE07C8DA_gshared (OrderedEnumerable_2_tA9DEFB149DAA0F612AACE71C5D5A35D6308A052D* __this, EnumerableSorter_1_t9DF0BF2FF3A689EB41C9CE2B42D3A91F5776B3AD* ___0_next, const RuntimeMethod* method) 
 {
 	EnumerableSorter_1_t9DF0BF2FF3A689EB41C9CE2B42D3A91F5776B3AD* V_0 = NULL;
@@ -24679,7 +24681,7 @@ IL_002e:
 #pragma clang diagnostic ignored "-Winvalid-offsetof"
 #pragma clang diagnostic ignored "-Wunused-variable"
 #endif
-// Method Definition Index: 81826
+// Method Definition Index: 81873
 IL2CPP_EXTERN_C IL2CPP_METHOD_ATTR void OrderedEnumerable_2__ctor_mDBD22B8FD21EB8AA78E215E6189E6A53CC537403_gshared (OrderedEnumerable_2_t71BA6A9F8F94FD49AA530865BA9BF576305461A1* __this, RuntimeObject* ___0_source, Func_2_tB86D019F1289E2D123C00796B373933613385952* ___1_keySelector, RuntimeObject* ___2_comparer, bool ___3_descending, const RuntimeMethod* method) 
 {
 	RuntimeObject* V_0 = NULL;
@@ -24760,7 +24762,7 @@ IL_0045:
 		return;
 	}
 }
-// Method Definition Index: 81827
+// Method Definition Index: 81874
 IL2CPP_EXTERN_C IL2CPP_METHOD_ATTR EnumerableSorter_1_t9DF0BF2FF3A689EB41C9CE2B42D3A91F5776B3AD* OrderedEnumerable_2_GetEnumerableSorter_m4B4F92651D5CA84704DCD68B1E94CB5345C2C067_gshared (OrderedEnumerable_2_t71BA6A9F8F94FD49AA530865BA9BF576305461A1* __this, EnumerableSorter_1_t9DF0BF2FF3A689EB41C9CE2B42D3A91F5776B3AD* ___0_next, const RuntimeMethod* method) 
 {
 	EnumerableSorter_1_t9DF0BF2FF3A689EB41C9CE2B42D3A91F5776B3AD* V_0 = NULL;
@@ -24801,7 +24803,7 @@ IL_002e:
 #pragma clang diagnostic ignored "-Winvalid-offsetof"
 #pragma clang diagnostic ignored "-Wunused-variable"
 #endif
-// Method Definition Index: 81826
+// Method Definition Index: 81873
 IL2CPP_EXTERN_C IL2CPP_METHOD_ATTR void OrderedEnumerable_2__ctor_mDAE8D9606AE152FCA2FCCF1A3BDBEFE47E91B819_gshared (OrderedEnumerable_2_tA5E665AC53BEDC7E4FD6924BFED49DE6B7A54475* __this, RuntimeObject* ___0_source, Func_2_t7F5F5324CE2DDB7001B68FFE29A5D9F907139FB0* ___1_keySelector, RuntimeObject* ___2_comparer, bool ___3_descending, const RuntimeMethod* method) 
 {
 	RuntimeObject* V_0 = NULL;
@@ -24882,7 +24884,7 @@ IL_0045:
 		return;
 	}
 }
-// Method Definition Index: 81827
+// Method Definition Index: 81874
 IL2CPP_EXTERN_C IL2CPP_METHOD_ATTR EnumerableSorter_1_t748424BBEB090E58B6D364ADABD271AC18B4C251* OrderedEnumerable_2_GetEnumerableSorter_m8CA623E1D6B4CCA559D8DC3A64779836925E822B_gshared (OrderedEnumerable_2_tA5E665AC53BEDC7E4FD6924BFED49DE6B7A54475* __this, EnumerableSorter_1_t748424BBEB090E58B6D364ADABD271AC18B4C251* ___0_next, const RuntimeMethod* method) 
 {
 	EnumerableSorter_1_t748424BBEB090E58B6D364ADABD271AC18B4C251* V_0 = NULL;
@@ -24947,7 +24949,7 @@ IL_002e:
 #pragma clang diagnostic ignored "-Winvalid-offsetof"
 #pragma clang diagnostic ignored "-Wunused-variable"
 #endif
-// Method Definition Index: 59512
+// Method Definition Index: 59516
 IL2CPP_EXTERN_C IL2CPP_METHOD_ATTR void Pair_2__ctor_mCA54688368FE894C9F314471A3DA94A72B709F51_gshared (Pair_2_tF8A435CDED15A96555BAB1E37C58429B2FF464A6* __this, Il2CppFullySharedGenericAny ___0_k, Il2CppFullySharedGenericAny ___1_v, const RuntimeMethod* method) 
 {
 	const uint32_t SizeOf_Key_tE14246D43A66068B6CBEBFCFE05D56F1A63F6AAF = il2cpp_codegen_sizeof(il2cpp_rgctx_data_no_init(InitializedTypeInfo(method->klass)->rgctx_data, 0));
@@ -24972,7 +24974,7 @@ IL2CPP_EXTERN_C  void Pair_2__ctor_mCA54688368FE894C9F314471A3DA94A72B709F51_Adj
 	_thisAdjusted = reinterpret_cast<Pair_2_tF8A435CDED15A96555BAB1E37C58429B2FF464A6*>(__this + _offset);
 	Pair_2__ctor_mCA54688368FE894C9F314471A3DA94A72B709F51(_thisAdjusted, ___0_k, ___1_v, method);
 }
-// Method Definition Index: 59513
+// Method Definition Index: 59517
 IL2CPP_EXTERN_C IL2CPP_METHOD_ATTR String_t* Pair_2_ToString_m085342B96D11597F12C847BB5175075784F51E5B_gshared (Pair_2_tF8A435CDED15A96555BAB1E37C58429B2FF464A6* __this, const RuntimeMethod* method) 
 {
 	static bool s_Il2CppMethodInitialized;
@@ -30730,22 +30732,22 @@ IL2CPP_MANAGED_FORCE_INLINE IL2CPP_METHOD_ATTR int32_t List_1_get_Count_m4407E4C
 		return L_0;
 	}
 }
-// Method Definition Index: 77897
-IL2CPP_MANAGED_FORCE_INLINE IL2CPP_METHOD_ATTR int32_t ObjectPool_1_get_CountAll_mD9E95EB668AB9DF0D91F47FB5C4909B54F5D13C2_gshared_inline (ObjectPool_1_tA50B57B65E34413AE66CE47788639071A023F756* __this, const RuntimeMethod* method) 
+// Method Definition Index: 77491
+IL2CPP_MANAGED_FORCE_INLINE IL2CPP_METHOD_ATTR int32_t ObjectPool_1_get_Total_mDDDAB3E234D5F3D7B517D2685EA2C838A0D0BCBA_gshared_inline (ObjectPool_1_tA50B57B65E34413AE66CE47788639071A023F756* __this, const RuntimeMethod* method) 
 {
 	{
-		//<source_info:C:/Users/MSI/Documents/Survival_Shooter/Assets/_Project/Scripts/ObjectPool.cs:41>
-		int32_t L_0 = __this->___U3CCountAllU3Ek__BackingField;
+		//<source_info:C:/Users/MSI/Documents/Survival_Shooter/Assets/_Project/Scripts/ObjectPool.cs:31>
+		int32_t L_0 = __this->___U3CTotalU3Ek__BackingField;
 		return L_0;
 	}
 }
-// Method Definition Index: 77898
-IL2CPP_MANAGED_FORCE_INLINE IL2CPP_METHOD_ATTR void ObjectPool_1_set_CountAll_m860441C8E02CCFABB1426764095A53D5ADDD259B_gshared_inline (ObjectPool_1_tA50B57B65E34413AE66CE47788639071A023F756* __this, int32_t ___0_value, const RuntimeMethod* method) 
+// Method Definition Index: 77492
+IL2CPP_MANAGED_FORCE_INLINE IL2CPP_METHOD_ATTR void ObjectPool_1_set_Total_mB4031E84319D316E72D80B728E25A6F76DE31D44_gshared_inline (ObjectPool_1_tA50B57B65E34413AE66CE47788639071A023F756* __this, int32_t ___0_value, const RuntimeMethod* method) 
 {
 	{
-		//<source_info:C:/Users/MSI/Documents/Survival_Shooter/Assets/_Project/Scripts/ObjectPool.cs:41>
+		//<source_info:C:/Users/MSI/Documents/Survival_Shooter/Assets/_Project/Scripts/ObjectPool.cs:31>
 		int32_t L_0 = ___0_value;
-		__this->___U3CCountAllU3Ek__BackingField = L_0;
+		__this->___U3CTotalU3Ek__BackingField = L_0;
 		return;
 	}
 }
@@ -30763,30 +30765,30 @@ IL2CPP_MANAGED_FORCE_INLINE IL2CPP_METHOD_ATTR int32_t Stack_1_get_Count_mD08AE7
 		return L_0;
 	}
 }
-// Method Definition Index: 77900
-IL2CPP_MANAGED_FORCE_INLINE IL2CPP_METHOD_ATTR int32_t ObjectPool_1_get_GrowCount_m85DCAEF346653AE796D2C3FE8F76B9AF23B0431B_gshared_inline (ObjectPool_1_tA50B57B65E34413AE66CE47788639071A023F756* __this, const RuntimeMethod* method) 
+// Method Definition Index: 77494
+IL2CPP_MANAGED_FORCE_INLINE IL2CPP_METHOD_ATTR int32_t ObjectPool_1_get_Grown_m7DD8265B158B610A971E9A79B6276685A2D7FAC0_gshared_inline (ObjectPool_1_tA50B57B65E34413AE66CE47788639071A023F756* __this, const RuntimeMethod* method) 
 {
 	{
-		//<source_info:C:/Users/MSI/Documents/Survival_Shooter/Assets/_Project/Scripts/ObjectPool.cs:43>
-		int32_t L_0 = __this->___U3CGrowCountU3Ek__BackingField;
+		//<source_info:C:/Users/MSI/Documents/Survival_Shooter/Assets/_Project/Scripts/ObjectPool.cs:33>
+		int32_t L_0 = __this->___U3CGrownU3Ek__BackingField;
 		return L_0;
 	}
 }
-// Method Definition Index: 77901
-IL2CPP_MANAGED_FORCE_INLINE IL2CPP_METHOD_ATTR void ObjectPool_1_set_GrowCount_m77E7FBB9854CE680DA0C01111481DDD32BC4F9B2_gshared_inline (ObjectPool_1_tA50B57B65E34413AE66CE47788639071A023F756* __this, int32_t ___0_value, const RuntimeMethod* method) 
+// Method Definition Index: 77495
+IL2CPP_MANAGED_FORCE_INLINE IL2CPP_METHOD_ATTR void ObjectPool_1_set_Grown_m4ABF8B19CF45EEDBBF1BE5BB9216249DDBC4E41A_gshared_inline (ObjectPool_1_tA50B57B65E34413AE66CE47788639071A023F756* __this, int32_t ___0_value, const RuntimeMethod* method) 
 {
 	{
-		//<source_info:C:/Users/MSI/Documents/Survival_Shooter/Assets/_Project/Scripts/ObjectPool.cs:43>
+		//<source_info:C:/Users/MSI/Documents/Survival_Shooter/Assets/_Project/Scripts/ObjectPool.cs:33>
 		int32_t L_0 = ___0_value;
-		__this->___U3CGrowCountU3Ek__BackingField = L_0;
+		__this->___U3CGrownU3Ek__BackingField = L_0;
 		return;
 	}
 }
-// Method Definition Index: 77896
+// Method Definition Index: 77490
 IL2CPP_MANAGED_FORCE_INLINE IL2CPP_METHOD_ATTR String_t* ObjectPool_1_get_Name_m713EB009111519AF6D375A8BA30C80094C204109_gshared_inline (ObjectPool_1_tA50B57B65E34413AE66CE47788639071A023F756* __this, const RuntimeMethod* method) 
 {
 	{
-		//<source_info:C:/Users/MSI/Documents/Survival_Shooter/Assets/_Project/Scripts/ObjectPool.cs:40>
+		//<source_info:C:/Users/MSI/Documents/Survival_Shooter/Assets/_Project/Scripts/ObjectPool.cs:30>
 		String_t* L_0 = __this->___U3CNameU3Ek__BackingField;
 		return L_0;
 	}
@@ -30843,7 +30845,7 @@ IL2CPP_MANAGED_FORCE_INLINE IL2CPP_METHOD_ATTR RuntimeObject* Func_1_Invoke_m141
 	typedef RuntimeObject* (*FunctionPointerType) (RuntimeObject*, const RuntimeMethod*);
 	return ((FunctionPointerType)__this->___invoke_impl)((Il2CppObject*)__this->___method_code, reinterpret_cast<RuntimeMethod*>(__this->___method));
 }
-// Method Definition Index: 44898
+// Method Definition Index: 44902
 IL2CPP_MANAGED_FORCE_INLINE IL2CPP_METHOD_ATTR int32_t ObjectPool_1_get_CountAll_mF3CDC0B64D5037106573C6CEE921EAF0A8B3C8EB_gshared_inline (ObjectPool_1_t13378E8CD14858BB05EA28BAB9CC49EDB91BA259* __this, const RuntimeMethod* method) 
 {
 	{
@@ -30851,7 +30853,7 @@ IL2CPP_MANAGED_FORCE_INLINE IL2CPP_METHOD_ATTR int32_t ObjectPool_1_get_CountAll
 		return L_0;
 	}
 }
-// Method Definition Index: 44899
+// Method Definition Index: 44903
 IL2CPP_MANAGED_FORCE_INLINE IL2CPP_METHOD_ATTR void ObjectPool_1_set_CountAll_mED1939CDEBB184383799328A0C1AEC9E1D2960D9_gshared_inline (ObjectPool_1_t13378E8CD14858BB05EA28BAB9CC49EDB91BA259* __this, int32_t ___0_value, const RuntimeMethod* method) 
 {
 	{
@@ -30860,7 +30862,7 @@ IL2CPP_MANAGED_FORCE_INLINE IL2CPP_METHOD_ATTR void ObjectPool_1_set_CountAll_mE
 		return;
 	}
 }
-// Method Definition Index: 44902
+// Method Definition Index: 44906
 IL2CPP_MANAGED_FORCE_INLINE IL2CPP_METHOD_ATTR RuntimeObject* ObjectPool_1_Get_m239BB169D8FEF3A2694E9A961C473D3807D67D89_gshared_inline (ObjectPool_1_t13378E8CD14858BB05EA28BAB9CC49EDB91BA259* __this, const RuntimeMethod* method) 
 {
 	RuntimeObject* V_0 = NULL;
@@ -30982,7 +30984,7 @@ IL2CPP_MANAGED_FORCE_INLINE IL2CPP_METHOD_ATTR void ObjectPool_1_set_countAll_m9
 		return;
 	}
 }
-// Method Definition Index: 44767
+// Method Definition Index: 44771
 IL2CPP_MANAGED_FORCE_INLINE IL2CPP_METHOD_ATTR void UnityAction_1_Invoke_m777839BF9CB9F96B081106B47202D06FB35326CA_gshared_inline (UnityAction_1_t9C30BCD020745BF400CBACF22C6F34ADBA2DDA6A* __this, RuntimeObject* ___0_arg0, const RuntimeMethod* method) 
 {
 	typedef void (*FunctionPointerType) (RuntimeObject*, RuntimeObject*, const RuntimeMethod*);

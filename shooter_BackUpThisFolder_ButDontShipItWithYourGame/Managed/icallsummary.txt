@@ -1894,6 +1894,8 @@ UnityEngine.TouchScreenKeyboard::get_inputFieldAppearance
 UnityEngine.TouchScreenKeyboard::get_status_Injected
 UnityEngine.TrailRenderer::Clear_Injected
 UnityEngine.TrailRenderer::set_emitting_Injected
+UnityEngine.TrailRenderer::set_endColor_Injected
+UnityEngine.TrailRenderer::set_startColor_Injected
 UnityEngine.Transform::IsChildOf_Injected
 UnityEngine.Transform::get_hasChanged_Injected
 UnityEngine.Transform::get_childCount_Injected
