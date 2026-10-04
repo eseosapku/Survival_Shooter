@@ -5,11 +5,6 @@ using Random = UnityEngine.Random;
 
 namespace Ricochet
 {
-    // =========================================================================
-    // ABILITY CARDS: abstract base + 5 subclasses (abstraction, inheritance, polymorphism)
-    // =========================================================================
-
-    /// <summary>Everything a card might change when it is picked up.</summary>
     public class PlayerContext
     {
         public Player Player;
@@ -18,9 +13,6 @@ namespace Ricochet
         public CardSettings Settings;
     }
 
-    /// <summary>
-    /// A collectable ability. The card system calls Activate without knowing which card it is (polymorphism).
-    /// </summary>
     public abstract class AbilityCard
     {
         public abstract string Title { get; }
@@ -28,31 +20,27 @@ namespace Ricochet
         public abstract void Activate(PlayerContext ctx);
     }
 
-    /// <summary>Spread tier +1 (Single → Twin → Tri → Quad) for 12 s.</summary>
     public class MultiShotCard : AbilityCard
     {
         public override string Title => "MULTI-SHOT";
         public override Color Color => new Color(1f, 0.6f, 0.1f);
-        public override void Activate(PlayerContext ctx) => ctx.Player.AddSpreadTier(1, ctx.Settings.MultiShotDuration);
+        public override void Activate(PlayerContext ctx) => ctx.Player.AddSpread(1, ctx.Settings.MultiShotTime);
     }
 
-    /// <summary>+1 mirror charge (placed with the HUD button).</summary>
     public class MirrorCard : AbilityCard
     {
         public override string Title => "MIRROR +1";
         public override Color Color => new Color(0.3f, 0.9f, 1f);
-        public override void Activate(PlayerContext ctx) => ctx.Cards.AddCharge(GadgetType.Mirror);
+        public override void Activate(PlayerContext ctx) => ctx.Cards.AddCharge(Gadget.Mirror);
     }
 
-    /// <summary>+1 prism charge (placed with the HUD button).</summary>
     public class PrismCard : AbilityCard
     {
         public override string Title => "PRISM +1";
         public override Color Color => new Color(1f, 0.3f, 0.9f);
-        public override void Activate(PlayerContext ctx) => ctx.Cards.AddCharge(GadgetType.Prism);
+        public override void Activate(PlayerContext ctx) => ctx.Cards.AddCharge(Gadget.Prism);
     }
 
-    /// <summary>Slows every enemy within 2 m of the player by 70% for 4 s.</summary>
     public class FreezeCard : AbilityCard
     {
         public override string Title => "FREEZE PULSE";
@@ -61,142 +49,161 @@ namespace Ricochet
         public override void Activate(PlayerContext ctx)
         {
             var s = ctx.Settings;
-            ctx.Enemies.ForEachAlive(e =>
+            ctx.Enemies.ForEach(e =>
             {
-                if (ctx.Player.HorizontalDistanceTo(e.transform.position) <= s.FreezeRadius)
-                    e.ApplySlow(s.FreezeSpeedFactor, s.FreezeDuration);
+                if (ctx.Player.FlatDistance(e.transform.position) <= s.FreezeRadius)
+                    e.Slow(s.FreezeSpeed, s.FreezeTime);
             });
             Vector3 p = ctx.Player.Position;
             Vfx.Ring(new Vector3(p.x, ctx.Cards.FloorHeight, p.z), s.FreezeRadius, Color, 40);
         }
     }
 
-    /// <summary>Restores 30 HP.</summary>
     public class MedKitCard : AbilityCard
     {
         public override string Title => "MED KIT +30";
         public override Color Color => new Color(0.3f, 1f, 0.4f);
-        public override void Activate(PlayerContext ctx) => ctx.Player.Heal(ctx.Settings.MedKitHeal);
+        public override void Activate(PlayerContext ctx) => ctx.Player.Heal(ctx.Settings.Heal);
     }
 
-    public enum GadgetType { Mirror, Prism }
+    public enum Gadget { Mirror, Prism }
 
-    // =========================================================================
-    // CARD SYSTEM: drops cards, detects walking pickups, places/expires mirrors & prisms
-    // =========================================================================
-
-    /// <summary>
-    /// Drops a random card near the beacon every ~20 s; the player collects it by physically walking over it
-    /// (camera within 0.5 m horizontally). Holds the mirror/prism charges and places them on the real floor
-    /// where the crosshair points. Card visuals, mirrors and prisms are all pooled.
-    /// Plain C# class ticked by the PlayingState.
-    /// </summary>
     public class CardSystem
     {
-        const int PoolPerCard = 2;
-        const int GadgetPoolSize = 4;
-        const float MaxPlaceDistance = 4f;
+        const float MaxReach = 6f;
+        const float MirrorHalfHeight = 0.32f;
 
-        class FloorCard { public AbilityCard Card; public Transform Visual; public ObjectPool<Transform> Pool; public float Age; }
-        class Gadget { public Transform Root; public ObjectPool<Transform> Pool; public float Remaining; }
+        class FloorCard
+        {
+            public AbilityCard Card;
+            public Transform Visual;
+            public ObjectPool<Transform> Pool;
+            public float Age;
+        }
 
-        readonly CardSettings _settings;
-        readonly Player _player;
-        readonly PlayerContext _context;
-        readonly AbilityCard[] _cards = { new MultiShotCard(), new MirrorCard(), new PrismCard(), new FreezeCard(), new MedKitCard() };
-        readonly ObjectPool<Transform>[] _cardPools;
-        readonly ObjectPool<Transform> _mirrors, _prisms;
-        readonly List<FloorCard> _onFloor = new List<FloorCard>();
-        readonly List<Gadget> _gadgets = new List<Gadget>();
-        readonly int _floorMask;
-        Arena _arena;
-        bool _running;
-        float _timer;
+        class Placed
+        {
+            public Transform Root;
+            public ObjectPool<Transform> Pool;
+            public Gadget Kind;
+            public float TimeLeft;
+        }
+
+        readonly CardSettings settings;
+        readonly Player player;
+        readonly PlayerContext context;
+        readonly AbilityCard[] cards = { new MultiShotCard(), new MirrorCard(), new PrismCard(), new FreezeCard(), new MedKitCard() };
+        readonly ObjectPool<Transform>[] cardPools;
+        readonly ObjectPool<Transform> mirrors, prisms;
+        readonly List<FloorCard> onFloor = new List<FloorCard>();
+        readonly List<Placed> placed = new List<Placed>();
+        readonly List<Transform> setupMirrors = new List<Transform>();
+        readonly int floorMask, wallMask;
+        Arena arena;
+        bool running;
+        float timer;
 
         public int MirrorCharges { get; private set; }
         public int PrismCharges { get; private set; }
-        public float FloorHeight => _arena != null ? _arena.FloorHeight : 0f;
+        public int SetupMirrorCount => setupMirrors.Count;
+        public int SetupMirrorLimit => settings.SetupMirrors;
+        public float FloorHeight => arena != null ? arena.Height : 0f;
 
-        /// <summary>(mirrorCharges, prismCharges)</summary>
+        public bool HasMirrors
+        {
+            get
+            {
+                if (setupMirrors.Count > 0) return true;
+                foreach (var p in placed)
+                    if (p.Kind == Gadget.Mirror) return true;
+                return false;
+            }
+        }
+
         public event Action<int, int> ChargesChanged;
-        public event Action<AbilityCard> CardCollected;
+        public event Action<int, int> SetupMirrorsChanged;
+        public event Action<AbilityCard> Collected;
 
         public CardSystem(GameConfig config, Transform poolRoot, Player player, EnemyFactory enemies)
         {
-            _settings = config.Cards;
-            _player = player;
-            _context = new PlayerContext { Player = player, Enemies = enemies, Cards = this, Settings = _settings };
-            _floorMask = LayerMask.GetMask("ARFloor");
+            settings = config.Cards;
+            this.player = player;
+            context = new PlayerContext { Player = player, Enemies = enemies, Cards = this, Settings = settings };
+            floorMask = LayerMask.GetMask("ARFloor");
+            wallMask = LayerMask.GetMask("ReflectiveWall");
 
-            _cardPools = new ObjectPool<Transform>[_cards.Length];
-            for (int i = 0; i < _cards.Length; i++)
-                _cardPools[i] = new ObjectPool<Transform>(config.CardPrefabs[i], PoolPerCard, poolRoot);
-            _mirrors = new ObjectPool<Transform>(config.MirrorPrefab, GadgetPoolSize, poolRoot);
-            _prisms = new ObjectPool<Transform>(config.PrismPrefab, GadgetPoolSize, poolRoot);
+            cardPools = new ObjectPool<Transform>[cards.Length];
+            for (int i = 0; i < cards.Length; i++)
+                cardPools[i] = new ObjectPool<Transform>(config.CardPrefabs[i], 2, poolRoot);
+            mirrors = new ObjectPool<Transform>(config.MirrorPrefab, 8, poolRoot);
+            prisms = new ObjectPool<Transform>(config.PrismPrefab, 4, poolRoot);
         }
 
-        public void Configure(Arena arena)
+        public void Setup(Arena area)
         {
-            _arena = arena;
-            _timer = _settings.FirstSpawnDelay;
+            arena = area;
+            timer = settings.FirstDelay;
             MirrorCharges = PrismCharges = 0;
             ChargesChanged?.Invoke(0, 0);
+            SetupMirrorsChanged?.Invoke(setupMirrors.Count, settings.SetupMirrors);
         }
 
-        public void SetRunning(bool running) => _running = running && _arena != null;
+        public void Enable(bool on) => running = on && arena != null;
 
         public void Tick(float dt)
         {
-            if (!_running) return;
+            if (!running) return;
 
-            if ((_timer -= dt) <= 0f)
+            if ((timer -= dt) <= 0f)
             {
-                _timer = _settings.SpawnInterval;
-                if (_onFloor.Count < _settings.MaxOnFloor) SpawnRandomCard();
+                timer = settings.SpawnInterval;
+                if (onFloor.Count < settings.MaxOnFloor) DropCard();
             }
 
-            for (int i = _onFloor.Count - 1; i >= 0; i--)
+            for (int i = onFloor.Count - 1; i >= 0; i--)
             {
-                var c = _onFloor[i];
+                var c = onFloor[i];
                 c.Age += dt;
-                AnimateCard(c);
-                if (_player.HorizontalDistanceTo(c.Visual.position) <= _settings.PickupDistance) Collect(i);
-                else if (c.Age >= _settings.CardLifetime) RemoveCard(i);
+                Spin(c);
+                if (player.FlatDistance(c.Visual.position) <= settings.PickupDistance) Collect(i);
+                else if (c.Age >= settings.CardLifetime) RemoveCard(i);
             }
 
-            for (int i = _gadgets.Count - 1; i >= 0; i--)
+            for (int i = placed.Count - 1; i >= 0; i--)
             {
-                var g = _gadgets[i];
-                g.Remaining -= dt;
+                var g = placed[i];
+                g.TimeLeft -= dt;
                 var visual = g.Root.Find("Visual");
-                if (visual) visual.localScale = Vector3.one * Mathf.Clamp(g.Remaining, 0.01f, 1f); // shrink away in the last second
+                if (visual) visual.localScale = Vector3.one * Mathf.Clamp(g.TimeLeft, 0.01f, 1f);
                 var spinner = g.Root.Find("Visual/Spinner");
                 if (spinner) spinner.Rotate(0f, 45f * dt, 0f, Space.Self);
-                if (g.Remaining <= 0f)
-                {
-                    g.Pool.Release(g.Root);
-                    _gadgets.RemoveAt(i);
-                }
+                if (g.TimeLeft > 0f) continue;
+                g.Pool.Return(g.Root);
+                placed.RemoveAt(i);
             }
         }
 
-        void SpawnRandomCard()
+        void DropCard()
         {
-            int index = Random.Range(0, _cards.Length);
-            Vector3 pos = _arena.Center;
+            int index = Random.Range(0, cards.Length);
+            Vector3 pos = arena.Center;
             for (int i = 0; i < 10; i++)
             {
-                Vector2 r = Random.insideUnitCircle * _settings.SpawnRadius;
-                Vector3 c = _arena.Center + new Vector3(r.x, 0f, r.y);
-                if (_player.HorizontalDistanceTo(c) > _settings.PickupDistance * 1.5f && _arena.IsOnFloor(c)) { pos = c; break; }
+                Vector2 r = Random.insideUnitCircle * settings.SpawnRadius;
+                Vector3 spot = arena.Center + new Vector3(r.x, 0f, r.y);
+                if (player.FlatDistance(spot) > settings.PickupDistance * 1.5f && arena.IsOnFloor(spot))
+                {
+                    pos = spot;
+                    break;
+                }
             }
-            pos = _arena.ProjectToFloor(pos);
-            var visual = _cardPools[index].Get(pos, Quaternion.identity);
-            _onFloor.Add(new FloorCard { Card = _cards[index], Visual = visual, Pool = _cardPools[index] });
-            Vfx.Ring(pos, 0.2f, _cards[index].Color, 16);
+            pos = arena.ToFloor(pos);
+            var visual = cardPools[index].Get(pos, Quaternion.identity);
+            onFloor.Add(new FloorCard { Card = cards[index], Visual = visual, Pool = cardPools[index] });
+            Vfx.Ring(pos, 0.2f, cards[index].Color, 16);
         }
 
-        static void AnimateCard(FloorCard c)
+        static void Spin(FloorCard c)
         {
             var card = c.Visual.Find("Visual");
             if (!card) return;
@@ -206,73 +213,130 @@ namespace Ricochet
 
         void Collect(int index)
         {
-            var c = _onFloor[index];
-            c.Card.Activate(_context); // polymorphic call
+            var c = onFloor[index];
+            c.Card.Activate(context);
             Vfx.Burst(c.Visual.position + Vector3.up * 0.2f, c.Card.Color, 18, 0.9f, 0.05f);
             AudioManager.Instance?.Play(SoundId.CardPickup);
-            CardCollected?.Invoke(c.Card);
+            Collected?.Invoke(c.Card);
             RemoveCard(index);
         }
 
         void RemoveCard(int index)
         {
-            _onFloor[index].Pool.Release(_onFloor[index].Visual);
-            _onFloor.RemoveAt(index);
+            onFloor[index].Pool.Return(onFloor[index].Visual);
+            onFloor.RemoveAt(index);
         }
 
-        // ---------- Gadgets (mirror / prism) ----------
-
-        public void AddCharge(GadgetType type)
+        public void AddCharge(Gadget kind)
         {
-            if (type == GadgetType.Mirror) MirrorCharges++;
+            if (kind == Gadget.Mirror) MirrorCharges++;
             else PrismCharges++;
             ChargesChanged?.Invoke(MirrorCharges, PrismCharges);
         }
 
-        /// <summary>HUD button: places a gadget on the floor under the crosshair, facing the camera.</summary>
-        public bool TryPlace(GadgetType type)
+        public bool PlaceGadget(Gadget kind)
         {
-            if (_arena == null || (type == GadgetType.Mirror ? MirrorCharges : PrismCharges) <= 0) return false;
-
-            Transform cam = _player.Camera.transform;
-            Vector3 pos;
-            if (Physics.Raycast(cam.position, cam.forward, out var hit, MaxPlaceDistance, _floorMask, QueryTriggerInteraction.Ignore))
-                pos = hit.point;
-            else if (cam.forward.y < -0.05f && (cam.position.y - FloorHeight) / -cam.forward.y <= MaxPlaceDistance)
-                pos = cam.position + cam.forward * ((FloorHeight - cam.position.y) / cam.forward.y);
-            else
+            if (arena == null || (kind == Gadget.Mirror ? MirrorCharges : PrismCharges) <= 0) return false;
+            Transform cam = player.Camera.transform;
+            if (!FindSpot(new Ray(cam.position, cam.forward), kind == Gadget.Mirror, out var pos, out var rot))
             {
                 Vector3 fwd = cam.forward;
                 fwd.y = 0f;
-                pos = cam.position + fwd.normalized * 1.2f;
+                pos = arena.ToFloor(cam.position + fwd.normalized * 1.2f);
+                rot = FaceCamera(pos);
             }
-            pos.y = FloorHeight;
 
-            Vector3 toCam = cam.position - pos;
-            toCam.y = 0f;
-            var rot = toCam.sqrMagnitude > 0.0001f ? Quaternion.LookRotation(toCam.normalized) : Quaternion.identity;
-
-            var pool = type == GadgetType.Mirror ? _mirrors : _prisms;
+            var pool = kind == Gadget.Mirror ? mirrors : prisms;
             var root = pool.Get(pos, rot);
-            var visual = root.Find("Visual");
-            if (visual) visual.localScale = Vector3.one;
-            _gadgets.Add(new Gadget { Root = root, Pool = pool, Remaining = _settings.GadgetLifetime });
+            ResetVisual(root);
+            placed.Add(new Placed { Root = root, Pool = pool, Kind = kind, TimeLeft = settings.GadgetLifetime });
 
-            if (type == GadgetType.Mirror) MirrorCharges--;
+            if (kind == Gadget.Mirror) MirrorCharges--;
             else PrismCharges--;
             ChargesChanged?.Invoke(MirrorCharges, PrismCharges);
             AudioManager.Instance?.PlayAt(SoundId.MirrorPlace, pos);
             return true;
         }
 
-        /// <summary>Wipes cards and gadgets (end of round).</summary>
-        public void ReleaseAll()
+        public bool PlaceSetupMirror(Vector2 screenPoint)
         {
-            _onFloor.Clear();
-            _gadgets.Clear();
-            foreach (var p in _cardPools) p.ReleaseAll();
-            _mirrors.ReleaseAll();
-            _prisms.ReleaseAll();
+            if (arena == null || setupMirrors.Count >= settings.SetupMirrors) return false;
+            var ray = player.Camera.ScreenPointToRay(screenPoint);
+            if (!FindSpot(ray, true, out var pos, out var rot)) return false;
+
+            var mirror = mirrors.Get(pos, rot);
+            ResetVisual(mirror);
+            setupMirrors.Add(mirror);
+            Vfx.Sparks(pos + rot * Vector3.up * MirrorHalfHeight, rot * Vector3.forward, new Color(0.3f, 0.9f, 1f), 14);
+            AudioManager.Instance?.PlayAt(SoundId.MirrorPlace, pos);
+            SetupMirrorsChanged?.Invoke(setupMirrors.Count, settings.SetupMirrors);
+            return true;
+        }
+
+        public void ClearSetupMirrors()
+        {
+            foreach (var m in setupMirrors) mirrors.Return(m);
+            setupMirrors.Clear();
+            SetupMirrorsChanged?.Invoke(0, settings.SetupMirrors);
+        }
+
+        bool FindSpot(Ray ray, bool allowWalls, out Vector3 pos, out Quaternion rot)
+        {
+            pos = default;
+            rot = Quaternion.identity;
+            int mask = allowWalls ? floorMask | wallMask : floorMask;
+
+            if (Physics.Raycast(ray, out var hit, MaxReach, mask, QueryTriggerInteraction.Ignore))
+            {
+                bool wall = (wallMask & (1 << hit.collider.gameObject.layer)) != 0;
+                if (wall)
+                {
+                    Vector3 normal = hit.normal;
+                    if (Vector3.Dot(normal, ray.direction) > 0f) normal = -normal;
+                    normal.y = 0f;
+                    if (normal.sqrMagnitude < 0.01f) return false;
+                    normal.Normalize();
+                    pos = hit.point + normal * 0.02f - Vector3.up * MirrorHalfHeight;
+                    rot = Quaternion.LookRotation(normal);
+                    return true;
+                }
+                pos = arena.ToFloor(hit.point);
+                rot = FaceCamera(pos);
+                return true;
+            }
+
+            if (ray.direction.y < -0.05f)
+            {
+                float t = (FloorHeight - ray.origin.y) / ray.direction.y;
+                if (t > 0f && t <= MaxReach)
+                {
+                    pos = arena.ToFloor(ray.origin + ray.direction * t);
+                    rot = FaceCamera(pos);
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        Quaternion FaceCamera(Vector3 pos)
+        {
+            Vector3 toCam = player.Position - pos;
+            toCam.y = 0f;
+            return toCam.sqrMagnitude > 0.0001f ? Quaternion.LookRotation(toCam.normalized) : Quaternion.identity;
+        }
+
+        static void ResetVisual(Transform root)
+        {
+            var visual = root.Find("Visual");
+            if (visual) visual.localScale = Vector3.one;
+        }
+
+        public void ClearRound()
+        {
+            foreach (var c in onFloor) c.Pool.Return(c.Visual);
+            onFloor.Clear();
+            foreach (var g in placed) g.Pool.Return(g.Root);
+            placed.Clear();
         }
     }
 }

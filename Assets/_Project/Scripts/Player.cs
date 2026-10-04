@@ -4,13 +4,6 @@ using UnityEngine;
 
 namespace Ricochet
 {
-    /// <summary>
-    /// The AR camera IS the player. This component sits on the camera and handles:
-    /// - HEALTH (IDamageable): enemies and acid hurt it through the same interface as enemies use.
-    /// - DAMAGE FEEDBACK: gun-viewmodel shake (never the AR camera), vibration, hurt/death sounds.
-    /// - LASER BLASTER: hold-to-fire pooled bolts from the muzzle toward the crosshair, heat and spread tiers.
-    /// The hurtbox is a child sphere (r = 0.25 m, layer PlayerHurtbox) with a kinematic Rigidbody.
-    /// </summary>
     public class Player : MonoBehaviour, IDamageable
     {
         [Header("References")]
@@ -32,110 +25,97 @@ namespace Ricochet
         [SerializeField, Min(0f)] float shakeStrength = 0.02f;
         [SerializeField, Min(0.01f)] float shakeDuration = 0.25f;
 
-        ObjectPool<Projectile> _bolts;
-        readonly List<Vector3> _directions = new List<Vector3>(4);
-        WeaponStats _weapon;
-        bool _invulnerable = true;
-        bool _armed;
-        bool _triggerHeld;
-        float _cooldown;
-        int _bonusTiers;
-        float _bonusTimer;
-        float _flashTimer;
-        float _recoil;
-        float _shakeTimer;
-        Vector3 _gunRest;
-        Vector3 _viewmodelRest;
-
-        // ---------- Public state ----------
+        ObjectPool<Projectile> bolts;
+        readonly List<Vector3> directions = new List<Vector3>(4);
+        WeaponStats weapon;
+        bool invulnerable = true;
+        bool armed;
+        bool firing;
+        float cooldown;
+        int extraSpread;
+        float spreadTimer;
+        float flashTimer;
+        float recoil;
+        float shakeTimer;
+        Vector3 gunStart;
+        Vector3 viewmodelStart;
 
         public Camera Camera => playerCamera;
         public Vector3 Position => transform.position;
         public Vector3 Forward => transform.forward;
-        /// <summary>The point enemies aim at (centre of the hurtbox).</summary>
-        public Vector3 TargetPoint => hurtbox ? hurtbox.transform.TransformPoint(hurtbox.center) : transform.position;
+        public Vector3 Target => hurtbox ? hurtbox.transform.TransformPoint(hurtbox.center) : transform.position;
 
         public float MaxHealth { get; private set; } = 100f;
         public float Health { get; private set; } = 100f;
-        public float Health01 => MaxHealth > 0f ? Health / MaxHealth : 0f;
+        public float HealthPercent => MaxHealth > 0f ? Health / MaxHealth : 0f;
         public bool IsAlive => Health > 0f;
 
-        public HeatSystem Heat { get; private set; }
-        public int SpreadTier => Mathf.Clamp(1 + _bonusTiers, 1, 4);
-        public float SpreadBonusRemaining => _bonusTimer;
+        public Heat Heat { get; private set; }
+        public int SpreadLevel => Mathf.Clamp(1 + extraSpread, 1, 4);
+        public float SpreadTimeLeft => spreadTimer;
 
-        // ---------- Events (Observer) ----------
-
-        public event Action<float, float> HealthChanged; // (current, max)
-        public event Action<DamageInfo> Damaged;
+        public event Action<float, float> HealthChanged;
+        public event Action<Hit> Damaged;
         public event Action Died;
-        public event Action<int> SpreadTierChanged;
+        public event Action<int> SpreadChanged;
 
         void Awake()
         {
-            _weapon = config.Weapon;
-            Heat = new HeatSystem(_weapon.CoolPerSecond, _weapon.OverheatLockTime);
+            weapon = config.Weapon;
+            Heat = new Heat(weapon.CoolRate, weapon.LockTime);
             Heat.OverheatChanged += hot => { if (hot) AudioManager.Instance?.Play(SoundId.Overheat); };
 
-            // Pre-warm: every bolt that will ever be used is created now, before play starts.
             ObjectPool<Projectile> pool = null;
-            pool = new ObjectPool<Projectile>(config.LaserBoltPrefab, boltPoolSize, boltPoolRoot, b => b.BindRelease(x => pool.Release(x)));
-            _bolts = pool;
+            pool = new ObjectPool<Projectile>(config.LaserPrefab, boltPoolSize, boltPoolRoot, b => b.SetReturn(x => pool.Return(x)));
+            bolts = pool;
 
-            if (gunModel) _gunRest = gunModel.localPosition;
-            if (viewmodel) _viewmodelRest = viewmodel.localPosition;
+            if (gunModel) gunStart = gunModel.localPosition;
+            if (viewmodel) viewmodelStart = viewmodel.localPosition;
             if (muzzleFlash) muzzleFlash.SetActive(false);
         }
 
-        public float HorizontalDistanceTo(Vector3 point)
+        public float FlatDistance(Vector3 point)
         {
             Vector3 d = point - transform.position;
             d.y = 0f;
             return d.magnitude;
         }
 
-        // =====================================================================
-        // HEALTH
-        // =====================================================================
-
-        public void ResetForRound(float maxHealth)
+        public void Respawn(float maxHealth)
         {
             MaxHealth = Health = maxHealth;
             HealthChanged?.Invoke(Health, MaxHealth);
-            _cooldown = 0f;
-            _triggerHeld = false;
-            _bonusTiers = 0;
-            _bonusTimer = 0f;
+            cooldown = 0f;
+            firing = false;
+            extraSpread = 0;
+            spreadTimer = 0f;
             Heat.Reset();
-            SpreadTierChanged?.Invoke(SpreadTier);
+            SpreadChanged?.Invoke(SpreadLevel);
         }
 
-        /// <summary>Damage and firing only happen while the round is being played.</summary>
-        public void SetCombatActive(bool active)
+        public void EnableCombat(bool on)
         {
-            _invulnerable = !active;
-            _armed = active;
-            if (!active) _triggerHeld = false;
+            invulnerable = !on;
+            armed = on;
+            if (!on) firing = false;
         }
 
-        public void TakeDamage(DamageInfo info)
+        public void TakeDamage(Hit hit)
         {
-            if (_invulnerable || !IsAlive || info.Amount <= 0f) return;
+            if (invulnerable || !IsAlive || hit.Damage <= 0f) return;
 
-            Health = Mathf.Max(0f, Health - info.Amount);
+            Health = Mathf.Max(0f, Health - hit.Damage);
             HealthChanged?.Invoke(Health, MaxHealth);
-            Damaged?.Invoke(info);
+            Damaged?.Invoke(hit);
 
-            _shakeTimer = shakeDuration;
+            shakeTimer = shakeDuration;
             AudioManager.Instance?.Play(SoundId.PlayerHurt);
 #if UNITY_ANDROID || UNITY_IOS
-            if (GameSettings.Vibration) Handheld.Vibrate();
+            if (Settings.Vibration) Handheld.Vibrate();
 #endif
-            if (Health <= 0f)
-            {
-                AudioManager.Instance?.Play(SoundId.PlayerDeath);
-                Died?.Invoke();
-            }
+            if (Health > 0f) return;
+            AudioManager.Instance?.Play(SoundId.PlayerDeath);
+            Died?.Invoke();
         }
 
         public void Heal(float amount)
@@ -145,171 +125,163 @@ namespace Ricochet
             HealthChanged?.Invoke(Health, MaxHealth);
         }
 
-        // =====================================================================
-        // WEAPON
-        // =====================================================================
+        public void SetFiring(bool on) => firing = on;
 
-        /// <summary>Hold-to-fire input from the HUD fire button.</summary>
-        public void SetTriggerHeld(bool held) => _triggerHeld = held;
-
-        /// <summary>Multi-Shot card: +tiers for a duration (picking another refreshes the timer).</summary>
-        public void AddSpreadTier(int tiers, float duration)
+        public void AddSpread(int levels, float duration)
         {
-            _bonusTiers = Mathf.Clamp(_bonusTiers + tiers, 0, 3);
-            _bonusTimer = duration;
-            SpreadTierChanged?.Invoke(SpreadTier);
+            extraSpread = Mathf.Clamp(extraSpread + levels, 0, 3);
+            spreadTimer = duration;
+            SpreadChanged?.Invoke(SpreadLevel);
         }
 
-        public void ReleaseAllBolts() => _bolts.ReleaseAll();
+        public void ClearBolts() => bolts.ReturnAll();
 
         void Update()
         {
             float dt = Time.deltaTime;
             Heat.Tick(dt);
-            _cooldown -= dt;
+            cooldown -= dt;
 
-            if (_bonusTimer > 0f)
+            if (spreadTimer > 0f)
             {
-                _bonusTimer -= dt;
-                if (_bonusTimer <= 0f)
+                spreadTimer -= dt;
+                if (spreadTimer <= 0f)
                 {
-                    _bonusTiers = 0;
-                    SpreadTierChanged?.Invoke(SpreadTier);
+                    extraSpread = 0;
+                    SpreadChanged?.Invoke(SpreadLevel);
                 }
             }
 
-            bool wantsFire = _triggerHeld;
+            bool wantsToFire = firing;
 #if UNITY_EDITOR
             var kb = UnityEngine.InputSystem.Keyboard.current;
-            if (kb != null && kb.spaceKey.isPressed) wantsFire = true;
+            if (kb != null && kb.spaceKey.isPressed) wantsToFire = true;
 #endif
-            if (_armed && wantsFire && _cooldown <= 0f && !Heat.IsOverheated) Fire();
+            if (armed && wantsToFire && cooldown <= 0f && !Heat.Overheated) Shoot();
 
-            AnimateViewmodel(dt);
+            AnimateGun(dt);
         }
 
-        void Fire()
+        void Shoot()
         {
-            _cooldown = _weapon.FireInterval;
+            cooldown = weapon.FireDelay;
 
-            // Aim at whatever is under the crosshair, so bolts from the off-centre muzzle converge on it.
             Transform cam = playerCamera.transform;
             Vector3 target = Physics.Raycast(cam.position, cam.forward, out var hit, maxAimDistance, aimMask, QueryTriggerInteraction.Ignore)
                 ? hit.point
                 : cam.position + cam.forward * maxAimDistance;
             Vector3 aim = (target - muzzle.position).normalized;
 
-            // Spread tiers: Single, Twin, Tri, Quad fanned ~8 degrees apart.
-            _directions.Clear();
-            float start = -_weapon.SpreadAngle * (SpreadTier - 1) * 0.5f;
-            for (int i = 0; i < SpreadTier; i++)
-                _directions.Add(Quaternion.AngleAxis(start + _weapon.SpreadAngle * i, cam.up) * aim);
+            directions.Clear();
+            float start = -weapon.Spread * (SpreadLevel - 1) * 0.5f;
+            for (int i = 0; i < SpreadLevel; i++)
+                directions.Add(Quaternion.AngleAxis(start + weapon.Spread * i, cam.up) * aim);
 
-            foreach (var dir in _directions) LaunchBolt(muzzle.position, dir, 0, true);
+            foreach (var dir in directions) SpawnBolt(muzzle.position, dir, 0, false, true);
 
-            Heat.AddHeat(_weapon.HeatPerShot);
+            Heat.Add(weapon.HeatPerShot);
             AudioManager.Instance?.Play(SoundId.PlayerShoot);
-            _flashTimer = 0.05f;
-            _recoil = 1f;
+            flashTimer = 0.05f;
+            recoil = 1f;
         }
 
-        void LaunchBolt(Vector3 position, Vector3 dir, int bounces, bool canSplit)
+        void SpawnBolt(Vector3 position, Vector3 dir, int bounces, bool fromMirror, bool canSplit)
         {
-            var bolt = _bolts.Get(position, Quaternion.LookRotation(dir));
-            bolt.LaunchLaser(dir, _weapon, bounces, canSplit, SplitBolt);
+            var bolt = bolts.Get(position, Quaternion.LookRotation(dir));
+            bolt.FireLaser(dir, weapon, bounces, fromMirror, canSplit, Split);
         }
 
-        /// <summary>Called by a bolt passing through a prism: two extra bolts at +/- the split angle.</summary>
-        void SplitBolt(Vector3 position, Vector3 direction, int bounces)
+        void Split(Vector3 position, Vector3 dir, int bounces, bool fromMirror)
         {
-            for (int sign = -1; sign <= 1; sign += 2)
-                LaunchBolt(position, Quaternion.AngleAxis(_weapon.PrismSplitAngle * sign, Vector3.up) * direction, bounces, false);
+            for (int side = -1; side <= 1; side += 2)
+                SpawnBolt(position, Quaternion.AngleAxis(weapon.SplitAngle * side, Vector3.up) * dir, bounces, fromMirror, false);
         }
 
-        void AnimateViewmodel(float dt)
+        void AnimateGun(float dt)
         {
             if (muzzleFlash)
             {
-                _flashTimer -= dt;
-                bool show = _flashTimer > 0f;
+                flashTimer -= dt;
+                bool show = flashTimer > 0f;
                 if (muzzleFlash.activeSelf != show) muzzleFlash.SetActive(show);
             }
+
             if (gunModel)
             {
-                _recoil = Mathf.MoveTowards(_recoil, 0f, dt * 10f);
-                gunModel.localPosition = _gunRest + new Vector3(0f, 0.004f, -0.02f) * _recoil;
+                recoil = Mathf.MoveTowards(recoil, 0f, dt * 10f);
+                gunModel.localPosition = gunStart + new Vector3(0f, 0.004f, -0.02f) * recoil;
             }
-            if (viewmodel)
+
+            if (!viewmodel) return;
+            if (shakeTimer > 0f)
             {
-                // Damage shake on the gun only; uses unscaled time so it still plays during the death slow-mo.
-                if (_shakeTimer > 0f)
-                {
-                    _shakeTimer -= Time.unscaledDeltaTime;
-                    float k = Mathf.Clamp01(_shakeTimer / shakeDuration) * shakeStrength;
-                    viewmodel.localPosition = _viewmodelRest + (Vector3)(UnityEngine.Random.insideUnitCircle * k);
-                }
-                else viewmodel.localPosition = _viewmodelRest;
+                shakeTimer -= Time.unscaledDeltaTime;
+                float k = Mathf.Clamp01(shakeTimer / shakeDuration) * shakeStrength;
+                viewmodel.localPosition = viewmodelStart + (Vector3)(UnityEngine.Random.insideUnitCircle * k);
+            }
+            else
+            {
+                viewmodel.localPosition = viewmodelStart;
             }
         }
     }
 
-    /// <summary>
-    /// Heat instead of ammo: each shot adds heat, heat cools over time, 100% locks firing for a moment.
-    /// Plain C# class (no scene presence) ticked by the Player.
-    /// </summary>
-    public class HeatSystem
+    public class Heat
     {
-        readonly float _coolPerSecond;
-        readonly float _lockTime;
-        float _lockTimer;
+        readonly float coolRate;
+        readonly float lockTime;
+        float lockTimer;
 
-        public float Heat01 { get; private set; }
-        public bool IsOverheated => _lockTimer > 0f;
+        public float Value { get; private set; }
+        public bool Overheated => lockTimer > 0f;
 
-        public event Action<float> HeatChanged;
+        public event Action<float> Changed;
         public event Action<bool> OverheatChanged;
 
-        public HeatSystem(float coolPerSecond, float lockTime)
+        public Heat(float coolRate, float lockTime)
         {
-            _coolPerSecond = coolPerSecond;
-            _lockTime = Mathf.Max(0.01f, lockTime);
+            this.coolRate = coolRate;
+            this.lockTime = Mathf.Max(0.01f, lockTime);
         }
 
         public void Reset()
         {
-            bool was = IsOverheated;
-            Heat01 = 0f;
-            _lockTimer = 0f;
-            HeatChanged?.Invoke(0f);
+            bool was = Overheated;
+            Value = 0f;
+            lockTimer = 0f;
+            Changed?.Invoke(0f);
             if (was) OverheatChanged?.Invoke(false);
         }
 
-        public void AddHeat(float amount)
+        public void Add(float amount)
         {
-            if (IsOverheated) return;
-            Heat01 = Mathf.Clamp01(Heat01 + amount);
-            HeatChanged?.Invoke(Heat01);
-            if (Heat01 < 1f) return;
-            _lockTimer = _lockTime;
+            if (Overheated) return;
+            Value = Mathf.Clamp01(Value + amount);
+            Changed?.Invoke(Value);
+            if (Value < 1f) return;
+            lockTimer = lockTime;
             OverheatChanged?.Invoke(true);
         }
 
         public void Tick(float dt)
         {
-            if (Heat01 <= 0f && !IsOverheated) return;
-            if (IsOverheated)
+            if (Value <= 0f && !Overheated) return;
+            if (Overheated)
             {
-                _lockTimer -= dt;
-                Heat01 = Mathf.Clamp01(_lockTimer / _lockTime); // bar drains while locked
-                if (_lockTimer <= 0f)
+                lockTimer -= dt;
+                Value = Mathf.Clamp01(lockTimer / lockTime);
+                if (lockTimer <= 0f)
                 {
-                    _lockTimer = 0f;
-                    Heat01 = 0f;
+                    lockTimer = 0f;
+                    Value = 0f;
                     OverheatChanged?.Invoke(false);
                 }
             }
-            else Heat01 = Mathf.Max(0f, Heat01 - _coolPerSecond * dt);
-            HeatChanged?.Invoke(Heat01);
+            else
+            {
+                Value = Mathf.Max(0f, Value - coolRate * dt);
+            }
+            Changed?.Invoke(Value);
         }
     }
 }

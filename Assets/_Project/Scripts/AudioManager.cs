@@ -3,13 +3,6 @@ using UnityEngine;
 
 namespace Ricochet
 {
-    /// <summary>
-    /// Single place that plays every sound (Singleton). Clips, volumes and pitch ranges come from GameConfig.
-    /// - 1 looping 2D source for music
-    /// - 1 2D source for UI / player one-shots (PlayOneShot lets them overlap)
-    /// - a pool of 10 3D sources that are moved to the event position (round-robin)
-    /// Enemies and projectiles have NO AudioSource of their own, so components are never duplicated.
-    /// </summary>
     public class AudioManager : MonoBehaviour
     {
         public static AudioManager Instance { get; private set; }
@@ -19,10 +12,11 @@ namespace Ricochet
         [SerializeField, Range(0f, 1f)] float musicVolume = 0.25f;
         [SerializeField, Min(1)] int spatialSourceCount = 10;
 
-        readonly Dictionary<SoundId, SoundEntry> _lookup = new Dictionary<SoundId, SoundEntry>();
-        AudioSource _music, _oneShot;
-        AudioSource[] _spatial;
-        int _next;
+        readonly Dictionary<SoundId, SoundEntry> sounds = new Dictionary<SoundId, SoundEntry>();
+        AudioSource music;
+        AudioSource effects;
+        AudioSource[] spatial;
+        int next;
 
         void Awake()
         {
@@ -33,14 +27,15 @@ namespace Ricochet
             }
             Instance = this;
 
-            foreach (var e in config.Sounds)
-                if (e.clips != null && e.clips.Length > 0) _lookup[e.id] = e;
+            foreach (var s in config.Sounds)
+                if (s.clips != null && s.clips.Length > 0) sounds[s.id] = s;
 
-            _music = CreateSource("Music", false);
-            _music.loop = true;
-            _oneShot = CreateSource("OneShot2D", false);
-            _spatial = new AudioSource[spatialSourceCount];
-            for (int i = 0; i < spatialSourceCount; i++) _spatial[i] = CreateSource($"Spatial3D_{i:00}", true);
+            music = CreateSource("Music", false);
+            music.loop = true;
+            effects = CreateSource("Effects", false);
+            spatial = new AudioSource[spatialSourceCount];
+            for (int i = 0; i < spatialSourceCount; i++)
+                spatial[i] = CreateSource("Spatial " + i, true);
         }
 
         void OnDestroy()
@@ -48,13 +43,13 @@ namespace Ricochet
             if (Instance == this) Instance = null;
         }
 
-        AudioSource CreateSource(string sourceName, bool spatial)
+        AudioSource CreateSource(string sourceName, bool is3D)
         {
             var go = new GameObject(sourceName);
             go.transform.SetParent(transform, false);
             var src = go.AddComponent<AudioSource>();
             src.playOnAwake = false;
-            src.spatialBlend = spatial ? 1f : 0f;
+            src.spatialBlend = is3D ? 1f : 0f;
             src.rolloffMode = AudioRolloffMode.Linear;
             src.minDistance = 0.5f;
             src.maxDistance = 12f;
@@ -62,40 +57,39 @@ namespace Ricochet
             return src;
         }
 
-        /// <summary>Non-positional sound (UI, player weapon, countdown...).</summary>
         public void Play(SoundId id)
         {
-            if (!_lookup.TryGetValue(id, out var e)) return;
-            _oneShot.pitch = Random.Range(e.pitchRange.x, e.pitchRange.y);
-            _oneShot.PlayOneShot(Pick(e), e.volume * masterVolume);
+            if (!sounds.TryGetValue(id, out var s)) return;
+            effects.pitch = Random.Range(s.pitchRange.x, s.pitchRange.y);
+            effects.PlayOneShot(RandomClip(s), s.volume * masterVolume);
         }
 
-        /// <summary>Positional sound from the next pooled 3D source.</summary>
         public void PlayAt(SoundId id, Vector3 position)
         {
-            if (!_lookup.TryGetValue(id, out var e)) return;
-            if (!e.spatial)
+            if (!sounds.TryGetValue(id, out var s)) return;
+            if (!s.spatial)
             {
                 Play(id);
                 return;
             }
-            var src = _spatial[_next];
-            _next = (_next + 1) % _spatial.Length;
+
+            var src = spatial[next];
+            next = (next + 1) % spatial.Length;
             src.transform.position = position;
-            src.pitch = Random.Range(e.pitchRange.x, e.pitchRange.y);
-            src.clip = Pick(e);
-            src.volume = e.volume * masterVolume;
+            src.pitch = Random.Range(s.pitchRange.x, s.pitchRange.y);
+            src.clip = RandomClip(s);
+            src.volume = s.volume * masterVolume;
             src.Play();
         }
 
         public void PlayMusic()
         {
-            if (_music.isPlaying || !_lookup.TryGetValue(SoundId.Music, out var e)) return;
-            _music.clip = Pick(e);
-            _music.volume = musicVolume * masterVolume;
-            _music.Play();
+            if (music.isPlaying || !sounds.TryGetValue(SoundId.Music, out var s)) return;
+            music.clip = RandomClip(s);
+            music.volume = musicVolume * masterVolume;
+            music.Play();
         }
 
-        static AudioClip Pick(SoundEntry e) => e.clips[Random.Range(0, e.clips.Length)];
+        static AudioClip RandomClip(SoundEntry s) => s.clips[Random.Range(0, s.clips.Length)];
     }
 }

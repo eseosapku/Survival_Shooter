@@ -6,16 +6,11 @@ using UnityEngine.EventSystems;
 
 namespace Ricochet
 {
-    /// <summary>
-    /// Central coordinator (Singleton). Owns the state machine, the round's score/timer, the leaderboard,
-    /// the enemy spawner/factory and the card system, and exposes simple commands that the UI calls.
-    /// It never references UI classes: the UI observes its events instead (Observer).
-    /// </summary>
     [DefaultExecutionOrder(-100)]
     public class GameManager : MonoBehaviour
     {
         public const int PointsPerSecond = 5;
-        public const int SurvivalBonus = 500;
+        public const int WinBonus = 500;
 
         public static GameManager Instance { get; private set; }
 
@@ -26,37 +21,37 @@ namespace Ricochet
         [SerializeField] ParticleSystem sparks;
         [SerializeField] ParticleSystem puffs;
 
-        GameStateMachine _machine;
-        MainMenuState _mainMenu;
-        LeaderboardState _leaderboard;
-        ScanningState _scanning;
-        CountdownState _countdown;
-        PlayingState _playing;
-        PausedState _paused;
-        GameOverState _gameOver;
+        StateMachine machine;
+        MenuState menu;
+        InstructionsState instructions;
+        LeaderboardState leaderboard;
+        ScanState scan;
+        SetupState setup;
+        CountdownState countdown;
+        PlayState play;
+        PauseState pause;
+        GameOverState gameOver;
 
         public GameConfig Config => config;
-        public GameStateMachine StateMachine => _machine;
-        public GameStateId CurrentState => _machine.Current.Id;
+        public StateMachine States => machine;
+        public GameStateId State => machine.Current.Id;
         public ARController AR => ar;
         public Player Player => player;
         public EnemyFactory Enemies { get; private set; }
         public EnemySpawner Spawner { get; private set; }
         public CardSystem Cards { get; private set; }
-        public ScoreSystem Score { get; } = new ScoreSystem();
+        public Score Score { get; } = new Score();
         public RoundTimer Timer { get; } = new RoundTimer();
-        public LeaderboardService Leaderboard { get; private set; }
+        public Leaderboard Leaderboard { get; private set; }
 
         public int DifficultyIndex { get; private set; }
-        public DifficultySettings ActiveDifficulty => config.GetDifficulty(DifficultyIndex);
-        public SessionResult LastResult { get; private set; }
-        public bool LastWasNewBest { get; private set; }
+        public DifficultySettings Difficulty => config.Difficulty(DifficultyIndex);
+        public RunResult LastRun { get; private set; }
+        public bool NewBest { get; private set; }
 
-        /// <summary>3, 2, 1, then 0 for "GO!".</summary>
-        public event Action<int> CountdownTicked;
+        public event Action<int> CountdownTick;
         public event Action<int> DifficultyChanged;
-        /// <summary>(result, isNewBest) once a round is over and saved.</summary>
-        public event Action<SessionResult, bool> RoundEnded;
+        public event Action<RunResult, bool> RoundEnded;
 
         void Awake()
         {
@@ -69,30 +64,32 @@ namespace Ricochet
 
             Application.targetFrameRate = 60;
             Screen.sleepTimeout = SleepTimeout.NeverSleep;
-            Physics.queriesHitBackfaces = true; // lasers must hit AR wall meshes from either side
+            Physics.queriesHitBackfaces = true;
             Vfx.Init(sparks, puffs);
 
-            DifficultyIndex = Mathf.Clamp(GameSettings.Difficulty, 0, config.DifficultyCount - 1);
-            Leaderboard = new LeaderboardService();
+            DifficultyIndex = Mathf.Clamp(Settings.Difficulty, 0, config.DifficultyCount - 1);
+            Leaderboard = new Leaderboard();
             Enemies = new EnemyFactory(config, poolRoot);
-            Spawner = new EnemySpawner(Enemies);
             Cards = new CardSystem(config, poolRoot, player, Enemies);
+            Spawner = new EnemySpawner(Enemies, () => Cards.HasMirrors);
 
-            _machine = new GameStateMachine();
-            _mainMenu = new MainMenuState(this);
-            _leaderboard = new LeaderboardState(this);
-            _scanning = new ScanningState(this);
-            _countdown = new CountdownState(this);
-            _playing = new PlayingState(this);
-            _paused = new PausedState(this);
-            _gameOver = new GameOverState(this);
+            machine = new StateMachine();
+            menu = new MenuState(this);
+            instructions = new InstructionsState(this);
+            leaderboard = new LeaderboardState(this);
+            scan = new ScanState(this);
+            setup = new SetupState(this);
+            countdown = new CountdownState(this);
+            play = new PlayState(this);
+            pause = new PauseState(this);
+            gameOver = new GameOverState(this);
 
             GameEvents.EnemyKilled += OnEnemyKilled;
         }
 
         void Start()
         {
-            _machine.ChangeState(_mainMenu);
+            machine.Change(menu);
             AudioManager.Instance?.PlayMusic();
         }
 
@@ -106,131 +103,122 @@ namespace Ricochet
 
         void Update()
         {
-            _machine.Tick();
+            machine.Tick();
 #if UNITY_EDITOR
             DebugKeys();
 #endif
         }
 
-        // ---------- Commands used by the UI ----------
-
         public void StartGame()
         {
-            if (ar.HasArena) GoToCountdown();
-            else _machine.ChangeState(_scanning);
+            if (ar.HasArena) machine.Change(setup);
+            else machine.Change(scan);
         }
 
-        public void OpenLeaderboard() => _machine.ChangeState(_leaderboard);
-        public void BackToMenu() => _machine.ChangeState(_mainMenu);
+        public void ShowInstructions() => machine.Change(instructions);
+        public void ShowLeaderboard() => machine.Change(leaderboard);
+        public void ShowMenu() => machine.Change(menu);
         public void Restart() => StartGame();
+        public void ShowSetup() => machine.Change(setup);
+        public void StartCountdown() => machine.Change(countdown);
+        public void StartRound() => machine.Change(play);
 
         public void Pause()
         {
-            if (_machine.Current == _playing && !_playing.IsDying) _machine.ChangeState(_paused);
+            if (machine.Current == play && !play.Dying) machine.Change(pause);
         }
 
         public void Resume()
         {
-            if (_machine.Current == _paused) _machine.ChangeState(_playing);
+            if (machine.Current == pause) machine.Change(play);
         }
 
-        public void SelectDifficulty(int index)
+        public void SetDifficulty(int index)
         {
             DifficultyIndex = Mathf.Clamp(index, 0, config.DifficultyCount - 1);
-            GameSettings.Difficulty = DifficultyIndex;
+            Settings.Difficulty = DifficultyIndex;
             DifficultyChanged?.Invoke(DifficultyIndex);
         }
 
-        // ---------- Called by the states ----------
+        public void ShowCountdown(int number) => CountdownTick?.Invoke(number);
 
-        public void GoToCountdown() => _machine.ChangeState(_countdown);
-        public void GoToPlaying() => _machine.ChangeState(_playing);
-        public void RaiseCountdown(int number) => CountdownTicked?.Invoke(number);
-
-        /// <summary>Puts every system back to the start of a round using the selected difficulty.</summary>
-        public void PrepareRound()
+        public void ResetRound()
         {
-            WipeBoard();
-            var d = ActiveDifficulty;
-            _playing.ResetRound();
-            player.ResetForRound(d.PlayerMaxHealth);
+            ClearBoard();
+            var d = Difficulty;
+            play.Reset();
+            player.Respawn(d.PlayerHealth);
             Score.Reset();
             Timer.Reset(d.RoundLength);
-            Enemies.Configure(player, ar.Arena, d.EnemyDamageMultiplier);
-            Spawner.Configure(d, () => Timer.Progress01, player, ar.Arena);
-            Cards.Configure(ar.Arena);
+            Enemies.Setup(player, ar.Arena, d.DamageMultiplier);
+            Spawner.Setup(d, () => Timer.Progress, player, ar.Arena);
+            Cards.Setup(ar.Arena);
         }
 
-        /// <summary>Turns the systems that only run during play on or off.</summary>
-        public void SetCombatActive(bool active)
+        public void EnableCombat(bool on)
         {
-            player.SetCombatActive(active);
-            Spawner.SetRunning(active);
-            Cards.SetRunning(active);
+            player.EnableCombat(on);
+            Spawner.Enable(on);
+            Cards.Enable(on);
         }
 
-        /// <summary>Returns every enemy, projectile, card and gadget to its pool.</summary>
-        public void WipeBoard()
+        public void ClearBoard()
         {
-            Enemies.ReleaseAll();
-            player.ReleaseAllBolts();
-            Cards.ReleaseAll();
+            Enemies.ReturnAll();
+            player.ClearBolts();
+            Cards.ClearRound();
         }
 
         public void EndRound(bool survived)
         {
-            if (survived) Score.AddPoints(SurvivalBonus);
+            if (survived) Score.Add(WinBonus);
 
-            LastResult = new SessionResult
+            LastRun = new RunResult
             {
-                score = Score.Score,
+                score = Score.Points,
                 enemiesDefeated = Score.Kills,
                 walkers = Score.Walkers,
                 spitters = Score.Spitters,
+                ghosts = Score.Ghosts,
                 timeSurvived = Timer.Elapsed,
-                difficulty = ActiveDifficulty.DisplayName,
+                difficulty = Difficulty.Name,
                 survived = survived,
                 dateIso = DateTime.Now.ToString("o")
             };
-            LastWasNewBest = Leaderboard.Add(LastResult);
+            NewBest = Leaderboard.Add(LastRun);
             if (survived) AudioManager.Instance?.Play(SoundId.RoundWin);
 
-            _machine.ChangeState(_gameOver);
-            RoundEnded?.Invoke(LastResult, LastWasNewBest);
+            machine.Change(gameOver);
+            RoundEnded?.Invoke(LastRun, NewBest);
         }
 
-        void OnEnemyKilled(EnemyKilledArgs kill)
+        void OnEnemyKilled(KillInfo kill)
         {
-            if (_machine.Current == _playing) Score.AddKill(kill);
+            if (machine.Current == play) Score.AddKill(kill);
         }
 
 #if UNITY_EDITOR
-        // Debug keys for testing the state machine in the editor.
         void DebugKeys()
         {
             var kb = UnityEngine.InputSystem.Keyboard.current;
             if (kb == null) return;
-            if (kb.f1Key.wasPressedThisFrame) BackToMenu();
+            if (kb.f1Key.wasPressedThisFrame) ShowMenu();
             if (kb.f2Key.wasPressedThisFrame) StartGame();
-            if (kb.f4Key.wasPressedThisFrame && _machine.Current == _playing) EndRound(true);
-            if (kb.f5Key.wasPressedThisFrame && _machine.Current == _playing)
-                player.TakeDamage(new DamageInfo(9999f, player.Position, Vector3.forward));
+            if (kb.f3Key.wasPressedThisFrame && machine.Current == setup) StartCountdown();
+            if (kb.f4Key.wasPressedThisFrame && machine.Current == play) EndRound(true);
+            if (kb.f5Key.wasPressedThisFrame && machine.Current == play)
+                player.TakeDamage(new Hit(9999f, player.Position, Vector3.forward));
             if (kb.pKey.wasPressedThisFrame)
             {
-                if (_machine.Current == _paused) Resume();
+                if (machine.Current == pause) Resume();
                 else Pause();
             }
         }
 #endif
     }
 
-    // =========================================================================
-    // STATE PATTERN
-    // =========================================================================
+    public enum GameStateId { MainMenu, Instructions, Leaderboard, Scanning, Setup, Countdown, Playing, Paused, GameOver }
 
-    public enum GameStateId { MainMenu, Leaderboard, Scanning, Countdown, Playing, Paused, GameOver }
-
-    /// <summary>One phase of the game. Each state switches on what it needs in Enter and off in Exit.</summary>
     public interface IGameState
     {
         GameStateId Id { get; }
@@ -239,85 +227,103 @@ namespace Ricochet
         void Exit();
     }
 
-    /// <summary>Runs exactly one state at a time and tells listeners (the UI) when it changes.</summary>
-    public class GameStateMachine
+    public class StateMachine
     {
         public IGameState Current { get; private set; }
+        public event Action<IGameState, IGameState> Changed;
 
-        /// <summary>(previous, current)</summary>
-        public event Action<IGameState, IGameState> StateChanged;
-
-        public void ChangeState(IGameState next)
+        public void Change(IGameState next)
         {
             if (next == null || next == Current) return;
             var previous = Current;
             previous?.Exit();
             Current = next;
             Current.Enter();
-            StateChanged?.Invoke(previous, Current);
+            Changed?.Invoke(previous, Current);
         }
 
         public void Tick() => Current?.Tick();
     }
 
-    /// <summary>Shared base: gives every state the GameManager and empty defaults.</summary>
-    public abstract class GameStateBase : IGameState
+    public abstract class GameState : IGameState
     {
         protected readonly GameManager Game;
-        protected GameStateBase(GameManager game) => Game = game;
+        protected GameState(GameManager game) => Game = game;
         public abstract GameStateId Id { get; }
         public virtual void Enter() { }
         public virtual void Tick() { }
         public virtual void Exit() { }
     }
 
-    /// <summary>Title screen. The arena (if placed) stays in the room, but nothing runs.</summary>
-    public class MainMenuState : GameStateBase
+    public class MenuState : GameState
     {
-        public MainMenuState(GameManager game) : base(game) { }
+        public MenuState(GameManager game) : base(game) { }
         public override GameStateId Id => GameStateId.MainMenu;
 
         public override void Enter()
         {
             Time.timeScale = 1f;
-            Game.AR.SetPlacementEnabled(false);
-            Game.SetCombatActive(false);
-            Game.WipeBoard();
+            Game.AR.EnablePlacement(false);
+            Game.EnableCombat(false);
+            Game.ClearBoard();
         }
     }
 
-    public class LeaderboardState : GameStateBase
+    public class InstructionsState : GameState
+    {
+        public InstructionsState(GameManager game) : base(game) { }
+        public override GameStateId Id => GameStateId.Instructions;
+    }
+
+    public class LeaderboardState : GameState
     {
         public LeaderboardState(GameManager game) : base(game) { }
         public override GameStateId Id => GameStateId.Leaderboard;
     }
 
-    /// <summary>Scan the floor and tap to place the beacon. The only state where placement is on.</summary>
-    public class ScanningState : GameStateBase
+    public class ScanState : GameState
     {
-        public ScanningState(GameManager game) : base(game) { }
+        public ScanState(GameManager game) : base(game) { }
         public override GameStateId Id => GameStateId.Scanning;
 
         public override void Enter()
         {
-            Game.AR.ArenaPlaced += OnArenaPlaced;
-            Game.AR.SetPlacementEnabled(true);
+            Game.AR.ArenaPlaced += OnPlaced;
+            Game.AR.EnablePlacement(true);
         }
 
         public override void Exit()
         {
-            Game.AR.ArenaPlaced -= OnArenaPlaced;
-            Game.AR.SetPlacementEnabled(false);
+            Game.AR.ArenaPlaced -= OnPlaced;
+            Game.AR.EnablePlacement(false);
         }
 
-        void OnArenaPlaced(Arena arena) => Game.GoToCountdown();
+        void OnPlaced(Arena arena) => Game.ShowSetup();
     }
 
-    /// <summary>Resets the round, then counts 3-2-1-GO.</summary>
-    public class CountdownState : GameStateBase
+    public class SetupState : GameState
     {
-        float _remaining;
-        int _shown;
+        public SetupState(GameManager game) : base(game) { }
+        public override GameStateId Id => GameStateId.Setup;
+
+        public override void Enter()
+        {
+            Time.timeScale = 1f;
+            Game.EnableCombat(false);
+            Game.ClearBoard();
+            Game.Cards.Setup(Game.AR.Arena);
+            Game.AR.Tapped += OnTap;
+        }
+
+        public override void Exit() => Game.AR.Tapped -= OnTap;
+
+        void OnTap(Vector2 screenPoint) => Game.Cards.PlaceSetupMirror(screenPoint);
+    }
+
+    public class CountdownState : GameState
+    {
+        float timeLeft;
+        int shown;
 
         public CountdownState(GameManager game) : base(game) { }
         public override GameStateId Id => GameStateId.Countdown;
@@ -325,67 +331,63 @@ namespace Ricochet
         public override void Enter()
         {
             Time.timeScale = 1f;
-            Game.PrepareRound();
-            _remaining = 3f;
-            _shown = -1;
+            Game.ResetRound();
+            timeLeft = 3f;
+            shown = -1;
         }
 
         public override void Tick()
         {
-            _remaining -= Time.deltaTime;
-            int number = Mathf.Max(0, Mathf.CeilToInt(_remaining));
-            if (number != _shown)
+            timeLeft -= Time.deltaTime;
+            int number = Mathf.Max(0, Mathf.CeilToInt(timeLeft));
+            if (number != shown)
             {
-                _shown = number;
-                Game.RaiseCountdown(number);
+                shown = number;
+                Game.ShowCountdown(number);
                 AudioManager.Instance?.Play(number > 0 ? SoundId.CountdownBeep : SoundId.CountdownGo);
             }
-            if (_remaining <= -0.4f) Game.GoToPlaying(); // hold "GO!" briefly
+            if (timeLeft <= -0.4f) Game.StartRound();
         }
     }
 
-    /// <summary>
-    /// The round. Ends on timer = 0 (win) or health = 0 (lose). On death there is a short slow-motion beat
-    /// (UI uses unscaled time) before the End screen.
-    /// </summary>
-    public class PlayingState : GameStateBase
+    public class PlayState : GameState
     {
-        const float DeathSlowMo = 0.35f;
+        const float SlowMotion = 0.35f;
         const float DeathDelay = 0.9f;
 
-        bool _dying;
-        float _deathTimer;
-        int _secondsScored;
+        bool dying;
+        float deathTimer;
+        int secondsScored;
 
-        public PlayingState(GameManager game) : base(game) { }
+        public PlayState(GameManager game) : base(game) { }
         public override GameStateId Id => GameStateId.Playing;
-        public bool IsDying => _dying;
+        public bool Dying => dying;
 
-        public void ResetRound()
+        public void Reset()
         {
-            _dying = false;
-            _secondsScored = 0;
+            dying = false;
+            secondsScored = 0;
         }
 
         public override void Enter()
         {
-            Time.timeScale = _dying ? DeathSlowMo : 1f;
-            Game.Player.Died += OnPlayerDied;
-            if (!_dying) Game.SetCombatActive(true);
+            Time.timeScale = dying ? SlowMotion : 1f;
+            Game.Player.Died += OnDied;
+            if (!dying) Game.EnableCombat(true);
         }
 
         public override void Exit()
         {
-            Game.Player.Died -= OnPlayerDied;
-            Game.SetCombatActive(false);
+            Game.Player.Died -= OnDied;
+            Game.EnableCombat(false);
         }
 
         public override void Tick()
         {
-            if (_dying)
+            if (dying)
             {
-                _deathTimer -= Time.unscaledDeltaTime;
-                if (_deathTimer <= 0f) Game.EndRound(false);
+                deathTimer -= Time.unscaledDeltaTime;
+                if (deathTimer <= 0f) Game.EndRound(false);
                 return;
             }
 
@@ -395,36 +397,34 @@ namespace Ricochet
             Game.Cards.Tick(dt);
 
             int seconds = Mathf.FloorToInt(Game.Timer.Elapsed);
-            if (seconds > _secondsScored)
+            if (seconds > secondsScored)
             {
-                Game.Score.AddPoints((seconds - _secondsScored) * GameManager.PointsPerSecond);
-                _secondsScored = seconds;
+                Game.Score.Add((seconds - secondsScored) * GameManager.PointsPerSecond);
+                secondsScored = seconds;
             }
 
-            if (Game.Timer.IsFinished) Game.EndRound(true);
+            if (Game.Timer.Done) Game.EndRound(true);
         }
 
-        void OnPlayerDied()
+        void OnDied()
         {
-            if (_dying) return;
-            _dying = true;
-            _deathTimer = DeathDelay;
-            Game.SetCombatActive(false);
-            Time.timeScale = DeathSlowMo;
+            if (dying) return;
+            dying = true;
+            deathTimer = DeathDelay;
+            Game.EnableCombat(false);
+            Time.timeScale = SlowMotion;
         }
     }
 
-    /// <summary>Time.timeScale = 0 freezes gameplay; the AR camera keeps tracking because it doesn't use game time.</summary>
-    public class PausedState : GameStateBase
+    public class PauseState : GameState
     {
-        public PausedState(GameManager game) : base(game) { }
+        public PauseState(GameManager game) : base(game) { }
         public override GameStateId Id => GameStateId.Paused;
         public override void Enter() => Time.timeScale = 0f;
         public override void Exit() => Time.timeScale = 1f;
     }
 
-    /// <summary>Round over: everything goes back to its pool. The result was already saved in EndRound.</summary>
-    public class GameOverState : GameStateBase
+    public class GameOverState : GameState
     {
         public GameOverState(GameManager game) : base(game) { }
         public override GameStateId Id => GameStateId.GameOver;
@@ -432,95 +432,91 @@ namespace Ricochet
         public override void Enter()
         {
             Time.timeScale = 1f;
-            Game.SetCombatActive(false);
-            Game.WipeBoard();
+            Game.EnableCombat(false);
+            Game.ClearBoard();
         }
     }
 
-    // =========================================================================
-    // ROUND: timer, score, game-wide events
-    // =========================================================================
-
-    /// <summary>Counts the round down. Raises TimeChanged once per displayed second.</summary>
     public class RoundTimer
     {
-        int _lastWhole = -1;
+        int lastShown = -1;
 
-        public float Duration { get; private set; }
+        public float Length { get; private set; }
         public float Elapsed { get; private set; }
-        public float Remaining => Mathf.Max(0f, Duration - Elapsed);
-        public float Progress01 => Duration > 0f ? Mathf.Clamp01(Elapsed / Duration) : 0f;
-        public bool IsFinished => Elapsed >= Duration;
+        public float Remaining => Mathf.Max(0f, Length - Elapsed);
+        public float Progress => Length > 0f ? Mathf.Clamp01(Elapsed / Length) : 0f;
+        public bool Done => Elapsed >= Length;
 
-        public event Action<float> TimeChanged;
+        public event Action<float> Changed;
 
-        public void Reset(float duration)
+        public void Reset(float length)
         {
-            Duration = duration;
+            Length = length;
             Elapsed = 0f;
-            _lastWhole = -1;
+            lastShown = -1;
             Notify();
         }
 
         public void Tick(float dt)
         {
-            if (IsFinished) return;
-            Elapsed = Mathf.Min(Duration, Elapsed + dt);
+            if (Done) return;
+            Elapsed = Mathf.Min(Length, Elapsed + dt);
             Notify();
         }
 
         void Notify()
         {
             int whole = Mathf.CeilToInt(Remaining);
-            if (whole == _lastWhole) return;
-            _lastWhole = whole;
-            TimeChanged?.Invoke(whole);
+            if (whole == lastShown) return;
+            lastShown = whole;
+            Changed?.Invoke(whole);
         }
     }
 
-    /// <summary>Score and kill counts. Kill score = enemy base score x ricochet multiplier of the killing bolt.</summary>
-    public class ScoreSystem
+    public class Score
     {
-        public int Score { get; private set; }
+        public int Points { get; private set; }
         public int Walkers { get; private set; }
         public int Spitters { get; private set; }
-        public int Kills => Walkers + Spitters;
+        public int Ghosts { get; private set; }
+        public int Kills => Walkers + Spitters + Ghosts;
 
-        public event Action<int> ScoreChanged;
-        /// <summary>(points, multiplier, world position) for the floating "+150 x2 RICOCHET!" text.</summary>
-        public event Action<int, float, Vector3> PointsAwarded;
+        public event Action<int> Changed;
+        public event Action<int, float, Vector3> Gained;
 
         public void Reset()
         {
-            Score = Walkers = Spitters = 0;
-            ScoreChanged?.Invoke(Score);
+            Points = Walkers = Spitters = Ghosts = 0;
+            Changed?.Invoke(Points);
         }
 
-        public void AddKill(EnemyKilledArgs kill)
+        public void AddKill(KillInfo kill)
         {
             if (kill.Type == EnemyType.Walker) Walkers++;
-            else Spitters++;
+            else if (kill.Type == EnemyType.Spitter) Spitters++;
+            else Ghosts++;
+
             int points = Mathf.RoundToInt(kill.BaseScore * kill.Multiplier);
-            AddPoints(points);
-            PointsAwarded?.Invoke(points, kill.Multiplier, kill.Position);
+            Add(points);
+            Gained?.Invoke(points, kill.Multiplier, kill.Position);
         }
 
-        public void AddPoints(int points)
+        public void Add(int points)
         {
             if (points == 0) return;
-            Score += points;
-            ScoreChanged?.Invoke(Score);
+            Points += points;
+            Changed?.Invoke(Points);
         }
     }
 
-    public readonly struct EnemyKilledArgs
+    public readonly struct KillInfo
     {
         public readonly EnemyType Type;
         public readonly int BaseScore;
         public readonly float Multiplier;
         public readonly Vector3 Position;
 
-        public EnemyKilledArgs(EnemyType type, int baseScore, float multiplier, Vector3 position)
+        public KillInfo(EnemyType type, int baseScore, float multiplier, Vector3 position)
         {
             Type = type;
             BaseScore = baseScore;
@@ -529,142 +525,134 @@ namespace Ricochet
         }
     }
 
-    /// <summary>Game-wide events (Observer). Enemies announce "I died"; score, UI and audio react independently.</summary>
     public static class GameEvents
     {
-        public static event Action<EnemyKilledArgs> EnemyKilled;
-        public static void RaiseEnemyKilled(EnemyKilledArgs args) => EnemyKilled?.Invoke(args);
+        public static event Action<KillInfo> EnemyKilled;
+        public static event Action<Vector3> HitBlocked;
+
+        public static void Killed(KillInfo kill) => EnemyKilled?.Invoke(kill);
+        public static void Blocked(Vector3 position) => HitBlocked?.Invoke(position);
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
-        static void Reset() => EnemyKilled = null;
-    }
-
-    // =========================================================================
-    // DAMAGE CONTRACT
-    // =========================================================================
-
-    /// <summary>Anything that can be hurt (the player and every enemy). Callers don't need to know which.</summary>
-    public interface IDamageable
-    {
-        bool IsAlive { get; }
-        void TakeDamage(DamageInfo info);
-    }
-
-    /// <summary>One hit. ScoreMultiplier carries the laser's ricochet bonus to the enemy.</summary>
-    public struct DamageInfo
-    {
-        public float Amount;
-        public Vector3 Point;
-        public Vector3 Direction;
-        public float ScoreMultiplier;
-
-        public DamageInfo(float amount, Vector3 point, Vector3 direction, float scoreMultiplier = 1f)
+        static void Reset()
         {
-            Amount = amount;
-            Point = point;
-            Direction = direction;
-            ScoreMultiplier = scoreMultiplier;
+            EnemyKilled = null;
+            HitBlocked = null;
         }
     }
 
-    // =========================================================================
-    // SAVE DATA: leaderboard + settings
-    // =========================================================================
+    public interface IDamageable
+    {
+        bool IsAlive { get; }
+        void TakeDamage(Hit hit);
+    }
+
+    public struct Hit
+    {
+        public float Damage;
+        public Vector3 Point;
+        public Vector3 Direction;
+        public float Multiplier;
+        public bool FromMirror;
+
+        public Hit(float damage, Vector3 point, Vector3 direction, float multiplier = 1f, bool fromMirror = false)
+        {
+            Damage = damage;
+            Point = point;
+            Direction = direction;
+            Multiplier = multiplier;
+            FromMirror = fromMirror;
+        }
+    }
 
     [Serializable]
-    public class SessionResult
+    public class RunResult
     {
         public int score;
         public int enemiesDefeated;
         public int walkers;
         public int spitters;
+        public int ghosts;
         public float timeSurvived;
         public string difficulty;
         public bool survived;
         public string dateIso;
     }
 
-    /// <summary>JsonUtility can't serialize a bare list, so it is wrapped.</summary>
     [Serializable]
-    public class SessionResultList
+    public class RunList
     {
-        public List<SessionResult> sessions = new List<SessionResult>();
+        public List<RunResult> sessions = new List<RunResult>();
     }
 
-    /// <summary>
-    /// Saves the LATEST 5 sessions (newest first) as JSON in persistentDataPath so they survive closing the app.
-    /// A missing or corrupt file never crashes the game. The best score is kept separately in PlayerPrefs.
-    /// </summary>
-    public class LeaderboardService
+    public class Leaderboard
     {
-        public const int MaxEntries = 5;
+        public const int MaxRuns = 5;
         const string BestKey = "Ricochet.BestScore";
 
-        readonly string _path = Path.Combine(Application.persistentDataPath, "leaderboard.json");
-        SessionResultList _data = new SessionResultList();
+        readonly string path = Path.Combine(Application.persistentDataPath, "leaderboard.json");
+        RunList data = new RunList();
 
         public event Action Changed;
-        public IReadOnlyList<SessionResult> Sessions => _data.sessions;
-        public int BestScore => PlayerPrefs.GetInt(BestKey, 0);
+        public IReadOnlyList<RunResult> Runs => data.sessions;
+        public int Best => PlayerPrefs.GetInt(BestKey, 0);
 
-        public LeaderboardService() => Load();
+        public Leaderboard() => Load();
 
         void Load()
         {
             try
             {
-                if (File.Exists(_path))
+                if (File.Exists(path))
                 {
-                    var loaded = JsonUtility.FromJson<SessionResultList>(File.ReadAllText(_path));
-                    if (loaded != null && loaded.sessions != null) _data = loaded;
+                    var loaded = JsonUtility.FromJson<RunList>(File.ReadAllText(path));
+                    if (loaded != null && loaded.sessions != null) data = loaded;
                 }
             }
             catch (Exception e)
             {
-                Debug.LogWarning($"[Leaderboard] Could not read {_path}, starting empty. {e.Message}");
-                _data = new SessionResultList();
+                Debug.LogWarning("Leaderboard file could not be read: " + e.Message);
+                data = new RunList();
             }
             Trim();
         }
 
-        /// <summary>Inserts at the front, keeps the latest 5. Returns true for a new best score.</summary>
-        public bool Add(SessionResult result)
+        public bool Add(RunResult run)
         {
-            _data.sessions.Insert(0, result);
+            data.sessions.Insert(0, run);
             Trim();
-            bool newBest = result.score > BestScore;
-            if (newBest)
+            bool best = run.score > Best;
+            if (best)
             {
-                PlayerPrefs.SetInt(BestKey, result.score);
+                PlayerPrefs.SetInt(BestKey, run.score);
                 PlayerPrefs.Save();
             }
             Save();
             Changed?.Invoke();
-            return newBest;
+            return best;
         }
 
         public void Clear()
         {
-            _data.sessions.Clear();
+            data.sessions.Clear();
             Save();
             Changed?.Invoke();
         }
 
         void Trim()
         {
-            if (_data.sessions.Count > MaxEntries)
-                _data.sessions.RemoveRange(MaxEntries, _data.sessions.Count - MaxEntries);
+            if (data.sessions.Count > MaxRuns)
+                data.sessions.RemoveRange(MaxRuns, data.sessions.Count - MaxRuns);
         }
 
         void Save()
         {
-            try { File.WriteAllText(_path, JsonUtility.ToJson(_data, true)); }
-            catch (Exception e) { Debug.LogWarning($"[Leaderboard] Could not save: {e.Message}"); }
+            try { File.WriteAllText(path, JsonUtility.ToJson(data, true)); }
+            catch (Exception e) { Debug.LogWarning("Leaderboard could not be saved: " + e.Message); }
         }
     }
 
-    /// <summary>Small preferences stored in PlayerPrefs.</summary>
-    public static class GameSettings
+    public static class Settings
     {
         public static int Difficulty
         {
@@ -679,28 +667,20 @@ namespace Ricochet
         }
     }
 
-    // =========================================================================
-    // HELPERS
-    // =========================================================================
-
-    /// <summary>
-    /// Particle effects without spawning objects: two world-space particle systems emit bursts anywhere on request.
-    /// ParticleSystem.Emit recycles particles internally, so this is effectively pooled too.
-    /// </summary>
     public static class Vfx
     {
-        static ParticleSystem s_Sparks;
-        static ParticleSystem s_Puffs;
+        static ParticleSystem sparks;
+        static ParticleSystem puffs;
 
-        public static void Init(ParticleSystem sparks, ParticleSystem puffs)
+        public static void Init(ParticleSystem sparkSystem, ParticleSystem puffSystem)
         {
-            s_Sparks = sparks;
-            s_Puffs = puffs;
+            sparks = sparkSystem;
+            puffs = puffSystem;
         }
 
         public static void Sparks(Vector3 position, Vector3 normal, Color color, int count = 10, float speed = 1.5f)
         {
-            if (!s_Sparks) return;
+            if (!sparks) return;
             var p = new ParticleSystem.EmitParams { startColor = color, applyShapeToPosition = false };
             for (int i = 0; i < count; i++)
             {
@@ -708,13 +688,13 @@ namespace Ricochet
                 p.velocity = (normal + UnityEngine.Random.insideUnitSphere * 0.9f).normalized * speed * UnityEngine.Random.Range(0.4f, 1f);
                 p.startSize = UnityEngine.Random.Range(0.012f, 0.025f);
                 p.startLifetime = UnityEngine.Random.Range(0.15f, 0.35f);
-                s_Sparks.Emit(p, 1);
+                sparks.Emit(p, 1);
             }
         }
 
         public static void Burst(Vector3 position, Color color, int count = 16, float speed = 0.8f, float size = 0.06f)
         {
-            if (!s_Puffs) return;
+            if (!puffs) return;
             var p = new ParticleSystem.EmitParams { startColor = color, applyShapeToPosition = false };
             for (int i = 0; i < count; i++)
             {
@@ -722,14 +702,13 @@ namespace Ricochet
                 p.velocity = UnityEngine.Random.insideUnitSphere * speed + Vector3.up * speed * 0.5f;
                 p.startSize = size * UnityEngine.Random.Range(0.6f, 1.3f);
                 p.startLifetime = UnityEngine.Random.Range(0.3f, 0.6f);
-                s_Puffs.Emit(p, 1);
+                puffs.Emit(p, 1);
             }
         }
 
-        /// <summary>A flat ring on the floor (enemy spawn, freeze pulse, card drop).</summary>
         public static void Ring(Vector3 center, float radius, Color color, int count = 24)
         {
-            if (!s_Puffs) return;
+            if (!puffs) return;
             var p = new ParticleSystem.EmitParams { startColor = color, applyShapeToPosition = false };
             for (int i = 0; i < count; i++)
             {
@@ -739,31 +718,30 @@ namespace Ricochet
                 p.velocity = dir * 0.3f + Vector3.up * 0.4f;
                 p.startSize = 0.05f;
                 p.startLifetime = 0.5f;
-                s_Puffs.Emit(p, 1);
+                puffs.Emit(p, 1);
             }
         }
     }
 
-    /// <summary>"Is this screen position on a UI element?" so a button press never also places or fires.</summary>
-    public static class UIHitTest
+    public static class TouchUI
     {
-        static readonly List<RaycastResult> s_Results = new List<RaycastResult>();
-        static PointerEventData s_Pointer;
-        static EventSystem s_Owner;
+        static readonly List<RaycastResult> results = new List<RaycastResult>();
+        static PointerEventData pointer;
+        static EventSystem owner;
 
-        public static bool IsOverUI(Vector2 screenPosition)
+        public static bool IsOverUI(Vector2 screenPoint)
         {
             var es = EventSystem.current;
             if (es == null) return false;
-            if (s_Pointer == null || s_Owner != es)
+            if (pointer == null || owner != es)
             {
-                s_Pointer = new PointerEventData(es);
-                s_Owner = es;
+                pointer = new PointerEventData(es);
+                owner = es;
             }
-            s_Pointer.position = screenPosition;
-            s_Results.Clear();
-            es.RaycastAll(s_Pointer, s_Results);
-            return s_Results.Count > 0;
+            pointer.position = screenPoint;
+            results.Clear();
+            es.RaycastAll(pointer, results);
+            return results.Count > 0;
         }
     }
 }

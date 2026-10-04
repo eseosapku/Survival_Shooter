@@ -5,121 +5,107 @@ using UnityEngine;
 
 namespace Ricochet
 {
-    /// <summary>
-    /// Optional contract for pooled objects. OnSpawned must reset ALL runtime state,
-    /// so a reused object behaves exactly like a brand-new one.
-    /// </summary>
     public interface IPoolable
     {
         void OnSpawned();
         void OnDespawned();
     }
 
-    /// <summary>Non-generic view of a pool so pools of different types can be listed together.</summary>
-    public interface IPoolStats
+    public interface IPoolInfo
     {
         string Name { get; }
-        int CountAll { get; }
-        int CountActive { get; }
-        int GrowCount { get; }
+        int Total { get; }
+        int InUse { get; }
+        int Grown { get; }
     }
 
-    /// <summary>
-    /// Generic, pre-warmed object pool (Object Pool pattern).
-    /// Every instance is created up front (in Awake), so gameplay never calls Instantiate/Destroy.
-    /// If the pool runs dry it grows by one and logs a warning, so an undersized pool is easy to spot.
-    /// </summary>
-    public class ObjectPool<T> : IPoolStats where T : Component
+    public class ObjectPool<T> : IPoolInfo where T : Component
     {
-        readonly T _prefab;
-        readonly Transform _parent;
-        readonly Action<T> _onCreate;
-        readonly Stack<T> _inactive = new Stack<T>();
-        readonly List<T> _active = new List<T>();
+        readonly T prefab;
+        readonly Transform parent;
+        readonly Action<T> setup;
+        readonly Stack<T> free = new Stack<T>();
+        readonly List<T> used = new List<T>();
 
         public string Name { get; }
-        public int CountAll { get; private set; }
-        public int CountActive => _active.Count;
-        public int GrowCount { get; private set; }
-        public IReadOnlyList<T> Active => _active;
+        public int Total { get; private set; }
+        public int InUse => used.Count;
+        public int Grown { get; private set; }
+        public IReadOnlyList<T> Active => used;
 
-        /// <param name="onCreate">One-time setup per instance, e.g. giving it a way to return itself.</param>
-        public ObjectPool(T prefab, int prewarm, Transform parent, Action<T> onCreate = null)
+        public ObjectPool(T prefab, int size, Transform parent, Action<T> setup = null)
         {
-            _prefab = prefab;
-            _parent = parent;
-            _onCreate = onCreate;
+            this.prefab = prefab;
+            this.parent = parent;
+            this.setup = setup;
             Name = prefab.name;
-            for (int i = 0; i < prewarm; i++)
-                _inactive.Push(CreateInstance());
-            PoolRegistry.Register(this);
+            for (int i = 0; i < size; i++)
+                free.Push(Create());
+            Pools.Add(this);
         }
 
-        T CreateInstance()
+        T Create()
         {
-            T item = UnityEngine.Object.Instantiate(_prefab, _parent);
-            item.name = $"{_prefab.name}_{CountAll:00}";
+            T item = UnityEngine.Object.Instantiate(prefab, parent);
+            item.name = prefab.name + "_" + Total;
             item.gameObject.SetActive(false);
-            CountAll++;
-            _onCreate?.Invoke(item);
+            Total++;
+            setup?.Invoke(item);
             return item;
         }
 
         public T Get(Vector3 position, Quaternion rotation)
         {
             T item;
-            if (_inactive.Count > 0)
+            if (free.Count > 0)
             {
-                item = _inactive.Pop();
+                item = free.Pop();
             }
             else
             {
-                GrowCount++;
-                Debug.LogWarning($"[ObjectPool] '{Name}' was empty and had to grow. Increase its pre-warm count.");
-                item = CreateInstance();
+                Grown++;
+                Debug.LogWarning($"Pool '{Name}' ran out and had to grow.");
+                item = Create();
             }
 
             item.transform.SetPositionAndRotation(position, rotation);
             item.gameObject.SetActive(true);
-            _active.Add(item);
+            used.Add(item);
             (item as IPoolable)?.OnSpawned();
             return item;
         }
 
-        /// <summary>Returns an object to the pool. A second call for the same object is ignored.</summary>
-        public void Release(T item)
+        public void Return(T item)
         {
-            if (item == null || !_active.Remove(item)) return;
+            if (item == null || !used.Remove(item)) return;
             (item as IPoolable)?.OnDespawned();
             item.gameObject.SetActive(false);
-            if (_parent != null && item.transform.parent != _parent)
-                item.transform.SetParent(_parent, false);
-            _inactive.Push(item);
+            if (parent != null && item.transform.parent != parent)
+                item.transform.SetParent(parent, false);
+            free.Push(item);
         }
 
-        public void ReleaseAll()
+        public void ReturnAll()
         {
-            for (int i = _active.Count - 1; i >= 0; i--)
-                Release(_active[i]);
+            for (int i = used.Count - 1; i >= 0; i--)
+                Return(used[i]);
         }
     }
 
-    /// <summary>Lists every pool so the pause screen can prove nothing is instantiated during play ("grown 0").</summary>
-    public static class PoolRegistry
+    public static class Pools
     {
-        static readonly List<IPoolStats> s_Pools = new List<IPoolStats>();
+        static readonly List<IPoolInfo> all = new List<IPoolInfo>();
 
-        public static void Register(IPoolStats pool) => s_Pools.Add(pool);
+        public static void Add(IPoolInfo pool) => all.Add(pool);
 
-        // Static state survives play sessions when domain reload is disabled, so clear it on startup.
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
-        static void Clear() => s_Pools.Clear();
+        static void Clear() => all.Clear();
 
-        public static string BuildReport()
+        public static string Report()
         {
-            var sb = new StringBuilder("POOLS  (active / total, grown)\n");
-            foreach (var p in s_Pools)
-                sb.AppendLine($"{p.Name}: {p.CountActive}/{p.CountAll}, grown {p.GrowCount}");
+            var sb = new StringBuilder("POOLS  (in use / total, grown)\n");
+            foreach (var p in all)
+                sb.AppendLine($"{p.Name}: {p.InUse}/{p.Total}, grown {p.Grown}");
             return sb.ToString();
         }
     }

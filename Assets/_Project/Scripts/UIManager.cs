@@ -8,12 +8,6 @@ using UnityEngine.UI;
 
 namespace Ricochet
 {
-    /// <summary>
-    /// Drives every screen. The panels themselves are already built in the scene (UI Canvas); this script only
-    /// wires them up. It shows exactly one panel per game state by LISTENING to GameStateMachine.StateChanged
-    /// (Observer), so gameplay code never knows the UI exists. Also: safe area, button click sounds and the
-    /// pooled floating "+150 x2 RICOCHET!" texts.
-    /// </summary>
     public class UIManager : MonoBehaviour
     {
         [SerializeField] RectTransform safeArea;
@@ -21,60 +15,75 @@ namespace Ricochet
         [SerializeField] TextMeshProUGUI floatingPrefab;
 
         [SerializeField] MainMenuPanel mainMenu = new MainMenuPanel();
+        [SerializeField] InstructionsPanel instructions = new InstructionsPanel();
         [SerializeField] LeaderboardPanel leaderboard = new LeaderboardPanel();
         [SerializeField] ScanPanel scan = new ScanPanel();
+        [SerializeField] SetupPanel setup = new SetupPanel();
         [SerializeField] CountdownPanel countdown = new CountdownPanel();
         [SerializeField] HUDPanel hud = new HUDPanel();
         [SerializeField] PausePanel pause = new PausePanel();
         [SerializeField] EndPanel end = new EndPanel();
 
-        readonly Dictionary<GameStateId, UIPanel> _byState = new Dictionary<GameStateId, UIPanel>();
-        GameManager _game;
-        Rect _safeApplied;
+        static readonly Color PointsColor = new Color(0.3f, 1f, 1f);
+        static readonly Color RicochetColor = new Color(1f, 0.25f, 0.85f);
+        static readonly Color BlockedColor = new Color(0.75f, 0.5f, 1f);
 
-        class Floating { public TextMeshProUGUI Text; public Vector3 World; public float Age; }
-        readonly List<Floating> _floating = new List<Floating>();
-        ObjectPool<TextMeshProUGUI> _floatPool;
+        readonly Dictionary<GameStateId, UIPanel> panels = new Dictionary<GameStateId, UIPanel>();
+        readonly List<Popup> popups = new List<Popup>();
+        ObjectPool<TextMeshProUGUI> popupPool;
+        GameManager game;
+        Rect appliedSafeArea;
+
+        class Popup
+        {
+            public TextMeshProUGUI Text;
+            public Vector3 World;
+            public float Age;
+        }
 
         void Start()
         {
-            _game = GameManager.Instance;
-            _byState[GameStateId.MainMenu] = mainMenu;
-            _byState[GameStateId.Leaderboard] = leaderboard;
-            _byState[GameStateId.Scanning] = scan;
-            _byState[GameStateId.Countdown] = countdown;
-            _byState[GameStateId.Playing] = hud;
-            _byState[GameStateId.Paused] = pause;
-            _byState[GameStateId.GameOver] = end;
+            game = GameManager.Instance;
+            panels[GameStateId.MainMenu] = mainMenu;
+            panels[GameStateId.Instructions] = instructions;
+            panels[GameStateId.Leaderboard] = leaderboard;
+            panels[GameStateId.Scanning] = scan;
+            panels[GameStateId.Setup] = setup;
+            panels[GameStateId.Countdown] = countdown;
+            panels[GameStateId.Playing] = hud;
+            panels[GameStateId.Paused] = pause;
+            panels[GameStateId.GameOver] = end;
 
-            foreach (var panel in _byState.Values)
+            foreach (var panel in panels.Values)
             {
-                panel.Initialize(_game);
+                panel.Init(game);
                 panel.Hide();
             }
 
             foreach (var button in GetComponentsInChildren<Button>(true))
                 button.onClick.AddListener(() => AudioManager.Instance?.Play(SoundId.UIClick));
 
-            _floatPool = new ObjectPool<TextMeshProUGUI>(floatingPrefab, 12, floatingRoot);
-            _game.Score.PointsAwarded += OnPointsAwarded;
-            _game.StateMachine.StateChanged += OnStateChanged;
-            if (_game.StateMachine.Current != null) ShowFor(_game.StateMachine.Current.Id);
+            popupPool = new ObjectPool<TextMeshProUGUI>(floatingPrefab, 12, floatingRoot);
+            game.Score.Gained += OnPointsGained;
+            GameEvents.HitBlocked += OnHitBlocked;
+            game.States.Changed += OnStateChanged;
+            if (game.States.Current != null) Show(game.States.Current.Id);
         }
 
         void OnDestroy()
         {
-            if (!_game) return;
-            _game.StateMachine.StateChanged -= OnStateChanged;
-            _game.Score.PointsAwarded -= OnPointsAwarded;
+            GameEvents.HitBlocked -= OnHitBlocked;
+            if (!game) return;
+            game.States.Changed -= OnStateChanged;
+            game.Score.Gained -= OnPointsGained;
         }
 
-        void OnStateChanged(IGameState previous, IGameState current) => ShowFor(current.Id);
+        void OnStateChanged(IGameState previous, IGameState current) => Show(current.Id);
 
-        void ShowFor(GameStateId id)
+        void Show(GameStateId id)
         {
-            _byState.TryGetValue(id, out var target);
-            foreach (var panel in _byState.Values)
+            panels.TryGetValue(id, out var target);
+            foreach (var panel in panels.Values)
                 if (panel != target) panel.Hide();
             if (target != null && !target.IsVisible) target.Show();
         }
@@ -82,93 +91,84 @@ namespace Ricochet
         void Update()
         {
             float dt = Time.unscaledDeltaTime;
-            foreach (var panel in _byState.Values)
+            foreach (var panel in panels.Values)
                 if (panel.IsVisible) panel.Tick(dt);
-            ApplySafeArea();
-            UpdateFloating(dt);
+            FitSafeArea();
+            UpdatePopups(dt);
         }
 
-        /// <summary>Keeps every panel inside Screen.safeArea (notches, rounded corners).</summary>
-        void ApplySafeArea()
+        void FitSafeArea()
         {
             Rect safe = Screen.safeArea;
-            if (safe == _safeApplied || Screen.width <= 0 || Screen.height <= 0) return;
-            _safeApplied = safe;
+            if (safe == appliedSafeArea || Screen.width <= 0 || Screen.height <= 0) return;
+            appliedSafeArea = safe;
             safeArea.anchorMin = new Vector2(safe.xMin / Screen.width, safe.yMin / Screen.height);
             safeArea.anchorMax = new Vector2(safe.xMax / Screen.width, safe.yMax / Screen.height);
             safeArea.offsetMin = safeArea.offsetMax = Vector2.zero;
         }
 
-        // ---------- Floating score text (pooled) ----------
-
-        void OnPointsAwarded(int points, float multiplier, Vector3 world)
+        void OnPointsGained(int points, float multiplier, Vector3 world)
         {
-            SpawnFloating($"+{points}", new Color(0.3f, 1f, 1f), 64f, world);
+            ShowPopup("+" + points, PointsColor, 64f, world);
             if (multiplier > 1f)
-                SpawnFloating($"x{multiplier:0.#} RICOCHET!", new Color(1f, 0.25f, 0.85f), 56f, world + Vector3.up * 0.25f);
+                ShowPopup($"x{multiplier:0.#} RICOCHET!", RicochetColor, 56f, world + Vector3.up * 0.25f);
         }
 
-        void SpawnFloating(string text, Color color, float size, Vector3 world)
+        void OnHitBlocked(Vector3 world) => ShowPopup("MIRROR SHOTS ONLY!", BlockedColor, 46f, world);
+
+        void ShowPopup(string text, Color color, float size, Vector3 world)
         {
-            var t = _floatPool.Get(Vector3.zero, Quaternion.identity);
+            var t = popupPool.Get(Vector3.zero, Quaternion.identity);
             t.text = text;
             t.color = color;
             t.fontSize = size;
-            _floating.Add(new Floating { Text = t, World = world });
+            popups.Add(new Popup { Text = t, World = world });
         }
 
-        void UpdateFloating(float dt)
+        void UpdatePopups(float dt)
         {
-            var cam = _game.Player.Camera;
-            for (int i = _floating.Count - 1; i >= 0; i--)
+            var cam = game.Player.Camera;
+            for (int i = popups.Count - 1; i >= 0; i--)
             {
-                var f = _floating[i];
-                f.Age += dt;
-                float t = f.Age / 1.1f;
-                Vector3 screen = cam.WorldToScreenPoint(f.World + Vector3.up * 0.35f * Mathf.Clamp01(t));
-                f.Text.enabled = screen.z > 0f;
+                var p = popups[i];
+                p.Age += dt;
+                float t = p.Age / 1.1f;
+                Vector3 screen = cam.WorldToScreenPoint(p.World + Vector3.up * 0.35f * Mathf.Clamp01(t));
+                p.Text.enabled = screen.z > 0f;
                 if (screen.z > 0f)
                 {
                     RectTransformUtility.ScreenPointToLocalPointInRectangle(floatingRoot, screen, null, out var local);
-                    f.Text.rectTransform.anchoredPosition = local;
+                    p.Text.rectTransform.anchoredPosition = local;
                 }
-                f.Text.alpha = 1f - Mathf.Clamp01((t - 0.6f) / 0.4f);
-                f.Text.rectTransform.localScale = Vector3.one * (1f + Mathf.Max(0f, 0.25f - t) * 2f);
+                p.Text.alpha = 1f - Mathf.Clamp01((t - 0.6f) / 0.4f);
+                p.Text.rectTransform.localScale = Vector3.one * (1f + Mathf.Max(0f, 0.25f - t) * 2f);
                 if (t < 1f) continue;
-                _floatPool.Release(f.Text);
-                _floating.RemoveAt(i);
+                popupPool.Return(p.Text);
+                popups.RemoveAt(i);
             }
         }
     }
 
-    // =========================================================================
-    // PANELS: abstract base + one subclass per screen (abstraction, inheritance, polymorphism)
-    // =========================================================================
-
-    /// <summary>
-    /// Base for every screen: the same Show/Hide behaviour with a quick fade-in on unscaled time (works while paused).
-    /// Subclasses hook into gameplay events in OnInitialize and refresh themselves in OnShow.
-    /// </summary>
     [Serializable]
     public abstract class UIPanel
     {
         [SerializeField] protected GameObject root;
 
-        CanvasGroup _group;
+        CanvasGroup group;
         protected GameManager Game { get; private set; }
         public bool IsVisible => root && root.activeSelf;
 
-        public void Initialize(GameManager game)
+        public void Init(GameManager game)
         {
             Game = game;
-            _group = root.GetComponent<CanvasGroup>();
-            OnInitialize();
+            group = root.GetComponent<CanvasGroup>();
+            OnInit();
         }
 
         public void Show()
         {
             root.SetActive(true);
-            if (_group) _group.alpha = 0f;
+            if (group) group.alpha = 0f;
             OnShow();
         }
 
@@ -181,42 +181,46 @@ namespace Ricochet
 
         public void Tick(float dt)
         {
-            if (_group && _group.alpha < 1f) _group.alpha = Mathf.MoveTowards(_group.alpha, 1f, dt * 6f);
+            if (group && group.alpha < 1f) group.alpha = Mathf.MoveTowards(group.alpha, 1f, dt * 6f);
             OnTick(dt);
         }
 
-        protected abstract void OnInitialize();
+        protected abstract void OnInit();
         protected virtual void OnShow() { }
         protected virtual void OnHide() { }
         protected virtual void OnTick(float dt) { }
 
-        protected static string FormatTime(float seconds)
+        protected static string Clock(float seconds)
         {
             int s = Mathf.Max(0, Mathf.CeilToInt(seconds));
             return $"{s / 60}:{s % 60:00}";
         }
     }
 
-    /// <summary>Title, Start, Leaderboard, difficulty selector (saved), vibration toggle, Quit.</summary>
     [Serializable]
     public class MainMenuPanel : UIPanel
     {
-        [SerializeField] Button startButton, leaderboardButton, quitButton, vibrationButton;
+        [SerializeField] Button startButton, leaderboardButton, howToPlayButton, quitButton, vibrationButton;
         [SerializeField] TMP_Text vibrationLabel, difficultyInfo, bestScoreText;
         [SerializeField] Button[] difficultyButtons = new Button[3];
         [SerializeField] Color selectedColor = new Color(1f, 0.2f, 0.8f);
         [SerializeField] Color unselectedColor = new Color(0.08f, 0.12f, 0.2f, 0.95f);
 
-        protected override void OnInitialize()
+        protected override void OnInit()
         {
             startButton.onClick.AddListener(Game.StartGame);
-            leaderboardButton.onClick.AddListener(Game.OpenLeaderboard);
+            leaderboardButton.onClick.AddListener(Game.ShowLeaderboard);
+            if (howToPlayButton) howToPlayButton.onClick.AddListener(Game.ShowInstructions);
             quitButton.onClick.AddListener(Quit);
-            vibrationButton.onClick.AddListener(() => { GameSettings.Vibration = !GameSettings.Vibration; Refresh(); });
+            vibrationButton.onClick.AddListener(() =>
+            {
+                Settings.Vibration = !Settings.Vibration;
+                Refresh();
+            });
             for (int i = 0; i < difficultyButtons.Length; i++)
             {
                 int index = i;
-                difficultyButtons[i].onClick.AddListener(() => Game.SelectDifficulty(index));
+                difficultyButtons[i].onClick.AddListener(() => Game.SetDifficulty(index));
             }
             Game.DifficultyChanged += _ => Refresh();
         }
@@ -227,10 +231,10 @@ namespace Ricochet
         {
             for (int i = 0; i < difficultyButtons.Length; i++)
                 difficultyButtons[i].image.color = i == Game.DifficultyIndex ? selectedColor : unselectedColor;
-            var d = Game.ActiveDifficulty;
-            difficultyInfo.text = $"{d.RoundLength:0}s round  ·  {d.PlayerMaxHealth:0} HP  ·  up to {d.MaxEnemiesAlive} zombies";
-            vibrationLabel.text = GameSettings.Vibration ? "VIBRATION: ON" : "VIBRATION: OFF";
-            int best = Game.Leaderboard.BestScore;
+            var d = Game.Difficulty;
+            difficultyInfo.text = $"{d.RoundLength:0}s round  ·  {d.PlayerHealth:0} HP  ·  up to {d.MaxEnemies} zombies";
+            vibrationLabel.text = Settings.Vibration ? "VIBRATION: ON" : "VIBRATION: OFF";
+            int best = Game.Leaderboard.Best;
             bestScoreText.text = best > 0 ? $"BEST  {best:N0}" : "";
         }
 
@@ -244,7 +248,14 @@ namespace Ricochet
         }
     }
 
-    /// <summary>Latest 5 runs, newest first; two-tap Clear; Back.</summary>
+    [Serializable]
+    public class InstructionsPanel : UIPanel
+    {
+        [SerializeField] Button backButton;
+
+        protected override void OnInit() => backButton.onClick.AddListener(Game.ShowMenu);
+    }
+
     [Serializable]
     public class LeaderboardPanel : UIPanel
     {
@@ -255,118 +266,142 @@ namespace Ricochet
         [SerializeField] TMP_Text emptyText, clearLabel;
         [SerializeField] Button clearButton, backButton;
 
-        float _confirm;
+        float confirmTimer;
 
-        protected override void OnInitialize()
+        protected override void OnInit()
         {
-            backButton.onClick.AddListener(Game.BackToMenu);
+            backButton.onClick.AddListener(Game.ShowMenu);
             clearButton.onClick.AddListener(OnClear);
             Game.Leaderboard.Changed += Refresh;
         }
 
         protected override void OnShow()
         {
-            _confirm = 0f;
+            confirmTimer = 0f;
             clearLabel.text = "CLEAR";
             Refresh();
         }
 
         protected override void OnTick(float dt)
         {
-            if (_confirm > 0f && (_confirm -= dt) <= 0f) clearLabel.text = "CLEAR";
+            if (confirmTimer > 0f && (confirmTimer -= dt) <= 0f) clearLabel.text = "CLEAR";
         }
 
         void OnClear()
         {
-            if (_confirm > 0f)
+            if (confirmTimer > 0f)
             {
                 Game.Leaderboard.Clear();
-                _confirm = 0f;
+                confirmTimer = 0f;
                 clearLabel.text = "CLEAR";
                 return;
             }
-            _confirm = 3f;
+            confirmTimer = 3f;
             clearLabel.text = "TAP AGAIN";
         }
 
         void Refresh()
         {
-            var sessions = Game.Leaderboard.Sessions;
+            var runs = Game.Leaderboard.Runs;
             for (int i = 0; i < rows.Length; i++)
             {
-                rows[i].SetActive(i < sessions.Count);
-                if (i >= sessions.Count) continue;
-                var r = sessions[i];
-                rankTexts[i].text = $"#{i + 1}";
+                rows[i].SetActive(i < runs.Count);
+                if (i >= runs.Count) continue;
+                var r = runs[i];
+                rankTexts[i].text = "#" + (i + 1);
                 string result = r.survived ? "<color=#33FFFF>SURVIVED</color>" : "<color=#FF4D80>OVERRUN</color>";
                 scoreTexts[i].text = $"{r.score:N0}  <size=60%>{result}</size>";
                 int secs = Mathf.FloorToInt(r.timeSurvived);
                 string date = DateTime.TryParse(r.dateIso, null, DateTimeStyles.RoundtripKind, out var dt)
-                    ? dt.ToLocalTime().ToString("dd MMM HH:mm") : "-";
+                    ? dt.ToLocalTime().ToString("dd MMM HH:mm")
+                    : "-";
                 detailTexts[i].text = $"{r.enemiesDefeated} kills  ·  {secs / 60}:{secs % 60:00}  ·  {r.difficulty}  ·  {date}";
             }
-            emptyText.gameObject.SetActive(sessions.Count == 0);
-            clearButton.interactable = sessions.Count > 0;
+            emptyText.gameObject.SetActive(runs.Count == 0);
+            clearButton.interactable = runs.Count > 0;
         }
     }
 
-    /// <summary>Guides scanning: "move your phone" → "tap to place". No full-screen background, so taps reach the AR view.</summary>
     [Serializable]
     public class ScanPanel : UIPanel
     {
         [SerializeField] TMP_Text instruction;
         [SerializeField] RectTransform phoneIcon;
         [SerializeField] Button backButton;
-        float _time;
+        float time;
 
-        protected override void OnInitialize()
+        protected override void OnInit()
         {
-            backButton.onClick.AddListener(Game.BackToMenu);
-            Game.AR.ReticleValidChanged += SetValid;
+            backButton.onClick.AddListener(Game.ShowMenu);
+            Game.AR.CanPlaceChanged += SetText;
         }
 
-        protected override void OnShow() => SetValid(Game.AR.ReticleValid);
+        protected override void OnShow() => SetText(Game.AR.CanPlace);
 
-        void SetValid(bool valid)
+        void SetText(bool canPlace)
         {
-            instruction.text = valid ? "Aim at the floor and\ntap to place the beacon" : "Move your phone slowly\nto scan the floor";
-            phoneIcon.gameObject.SetActive(!valid);
+            instruction.text = canPlace ? "Aim at the floor and\ntap to place the beacon" : "Move your phone slowly\nto scan the floor";
+            phoneIcon.gameObject.SetActive(!canPlace);
         }
 
         protected override void OnTick(float dt)
         {
-            _time += dt;
-            phoneIcon.anchoredPosition = new Vector2(Mathf.Sin(_time * 2f) * 90f, phoneIcon.anchoredPosition.y);
-            phoneIcon.localRotation = Quaternion.Euler(0f, 0f, Mathf.Sin(_time * 2f) * -12f);
+            time += dt;
+            phoneIcon.anchoredPosition = new Vector2(Mathf.Sin(time * 2f) * 90f, phoneIcon.anchoredPosition.y);
+            phoneIcon.localRotation = Quaternion.Euler(0f, 0f, Mathf.Sin(time * 2f) * -12f);
         }
     }
 
-    /// <summary>Big 3-2-1-GO! with a punch animation.</summary>
+    [Serializable]
+    public class SetupPanel : UIPanel
+    {
+        [SerializeField] TMP_Text countText;
+        [SerializeField] Button startButton, clearButton, backButton;
+
+        protected override void OnInit()
+        {
+            startButton.onClick.AddListener(Game.StartCountdown);
+            clearButton.onClick.AddListener(Game.Cards.ClearSetupMirrors);
+            backButton.onClick.AddListener(Game.ShowMenu);
+            Game.Cards.SetupMirrorsChanged += SetCount;
+        }
+
+        protected override void OnShow() => SetCount(Game.Cards.SetupMirrorCount, Game.Cards.SetupMirrorLimit);
+
+        void SetCount(int count, int max)
+        {
+            countText.text = $"MIRRORS  {count} / {max}";
+            clearButton.interactable = count > 0;
+        }
+    }
+
     [Serializable]
     public class CountdownPanel : UIPanel
     {
         [SerializeField] TMP_Text numberText;
-        float _punch;
+        float punch;
 
-        protected override void OnInitialize() => Game.CountdownTicked += n =>
+        protected override void OnInit() => Game.CountdownTick += n =>
         {
             numberText.text = n > 0 ? n.ToString() : "GO!";
             numberText.color = n > 0 ? new Color(0.2f, 1f, 1f) : new Color(1f, 0.2f, 0.8f);
-            _punch = 1f;
+            punch = 1f;
         };
 
         protected override void OnTick(float dt)
         {
-            _punch = Mathf.MoveTowards(_punch, 0f, dt * 2.5f);
-            numberText.rectTransform.localScale = Vector3.one * (1f + _punch * _punch * 0.6f);
+            punch = Mathf.MoveTowards(punch, 0f, dt * 2.5f);
+            numberText.rectTransform.localScale = Vector3.one * (1f + punch * punch * 0.6f);
         }
     }
 
-    /// <summary>In-game HUD. Purely an observer of gameplay events; its buttons send commands.</summary>
     [Serializable]
     public class HUDPanel : UIPanel
     {
-        static readonly string[] TierNames = { "", "SINGLE", "TWIN", "TRI", "QUAD" };
+        static readonly string[] SpreadNames = { "", "SINGLE", "TWIN", "TRI", "QUAD" };
+        static readonly Color Cyan = new Color(0.2f, 1f, 1f);
+        static readonly Color Hot = new Color(1f, 0.3f, 0.2f);
+        static readonly Color Warning = new Color(1f, 0.25f, 0.3f);
 
         [SerializeField] Image healthFill, heatFill;
         [SerializeField] TMP_Text healthText, scoreText, timeText, heatLabel, spreadText, wallsText, toastText, mirrorCount, prismCount;
@@ -375,85 +410,105 @@ namespace Ricochet
         [SerializeField] RectTransform fireVisual;
         [SerializeField] CanvasGroup damageVignette, deathOverlay;
 
-        static readonly Color Cyan = new Color(0.2f, 1f, 1f), Hot = new Color(1f, 0.3f, 0.2f), Warn = new Color(1f, 0.25f, 0.3f);
-        float _vignette, _toast;
-        int _pointers;
+        float vignette, toastTimer;
+        int fingers;
 
-        protected override void OnInitialize()
+        protected override void OnInit()
         {
             pauseButton.onClick.AddListener(Game.Pause);
-            mirrorButton.onClick.AddListener(() => Game.Cards.TryPlace(GadgetType.Mirror));
-            prismButton.onClick.AddListener(() => Game.Cards.TryPlace(GadgetType.Prism));
+            mirrorButton.onClick.AddListener(() => Game.Cards.PlaceGadget(Gadget.Mirror));
+            prismButton.onClick.AddListener(() => Game.Cards.PlaceGadget(Gadget.Prism));
 
-            // Hold-to-fire: built-in EventTrigger reports finger down / up on the fire button.
             var trigger = fireButton.GetComponent<EventTrigger>();
             if (!trigger) trigger = fireButton.AddComponent<EventTrigger>();
-            AddTrigger(trigger, EventTriggerType.PointerDown, () => { _pointers++; SetFiring(true); });
-            AddTrigger(trigger, EventTriggerType.PointerUp, () => { _pointers = Mathf.Max(0, _pointers - 1); if (_pointers == 0) SetFiring(false); });
+            OnPointer(trigger, EventTriggerType.PointerDown, () =>
+            {
+                fingers++;
+                SetFiring(true);
+            });
+            OnPointer(trigger, EventTriggerType.PointerUp, () =>
+            {
+                fingers = Mathf.Max(0, fingers - 1);
+                if (fingers == 0) SetFiring(false);
+            });
 
             var p = Game.Player;
-            p.HealthChanged += (cur, max) => { healthFill.fillAmount = max > 0f ? cur / max : 0f; healthText.text = Mathf.CeilToInt(cur).ToString(); };
-            p.Damaged += _ => _vignette = 0.75f;
-            p.SpreadTierChanged += t => spreadText.text = TierNames[Mathf.Clamp(t, 1, 4)];
-            p.Heat.HeatChanged += OnHeat;
-            p.Heat.OverheatChanged += hot => { heatLabel.text = hot ? "OVERHEAT!" : "HEAT"; heatLabel.color = hot ? Hot : Cyan; OnHeat(p.Heat.Heat01); };
-            Game.Score.ScoreChanged += s => scoreText.text = s.ToString("N0");
-            Game.Timer.TimeChanged += OnTime;
-            Game.AR.WallCountChanged += n => wallsText.text = $"WALLS: {n}";
-            Game.Cards.ChargesChanged += OnCharges;
-            Game.Cards.CardCollected += card => { toastText.text = card.Title; toastText.color = card.Color; _toast = 1.8f; };
+            p.HealthChanged += (current, max) =>
+            {
+                healthFill.fillAmount = max > 0f ? current / max : 0f;
+                healthText.text = Mathf.CeilToInt(current).ToString();
+            };
+            p.Damaged += _ => vignette = 0.75f;
+            p.SpreadChanged += level => spreadText.text = SpreadNames[Mathf.Clamp(level, 1, 4)];
+            p.Heat.Changed += SetHeat;
+            p.Heat.OverheatChanged += hot =>
+            {
+                heatLabel.text = hot ? "OVERHEAT!" : "HEAT";
+                heatLabel.color = hot ? Hot : Cyan;
+                SetHeat(p.Heat.Value);
+            };
+            Game.Score.Changed += s => scoreText.text = s.ToString("N0");
+            Game.Timer.Changed += SetTime;
+            Game.AR.WallsChanged += n => wallsText.text = "WALLS: " + n;
+            Game.Cards.ChargesChanged += SetCharges;
+            Game.Cards.Collected += card =>
+            {
+                toastText.text = card.Title;
+                toastText.color = card.Color;
+                toastTimer = 1.8f;
+            };
         }
 
-        static void AddTrigger(EventTrigger trigger, EventTriggerType type, Action action)
+        static void OnPointer(EventTrigger trigger, EventTriggerType type, Action action)
         {
             var entry = new EventTrigger.Entry { eventID = type };
             entry.callback.AddListener(_ => action());
             trigger.triggers.Add(entry);
         }
 
-        void SetFiring(bool held)
+        void SetFiring(bool on)
         {
-            fireVisual.localScale = Vector3.one * (held ? 0.9f : 1f);
-            Game.Player.SetTriggerHeld(held);
+            fireVisual.localScale = Vector3.one * (on ? 0.9f : 1f);
+            Game.Player.SetFiring(on);
         }
 
         protected override void OnShow()
         {
             var p = Game.Player;
-            healthFill.fillAmount = p.Health01;
+            healthFill.fillAmount = p.HealthPercent;
             healthText.text = Mathf.CeilToInt(p.Health).ToString();
-            scoreText.text = Game.Score.Score.ToString("N0");
-            OnTime(Game.Timer.Remaining);
-            OnHeat(p.Heat.Heat01);
-            spreadText.text = TierNames[p.SpreadTier];
-            wallsText.text = $"WALLS: {Game.AR.WallCount}";
-            OnCharges(Game.Cards.MirrorCharges, Game.Cards.PrismCharges);
-            _vignette = 0f;
+            scoreText.text = Game.Score.Points.ToString("N0");
+            SetTime(Game.Timer.Remaining);
+            SetHeat(p.Heat.Value);
+            spreadText.text = SpreadNames[p.SpreadLevel];
+            wallsText.text = "WALLS: " + Game.AR.WallCount;
+            SetCharges(Game.Cards.MirrorCharges, Game.Cards.PrismCharges);
+            vignette = 0f;
             damageVignette.alpha = deathOverlay.alpha = 0f;
-            if (_toast <= 0f) toastText.text = "";
+            if (toastTimer <= 0f) toastText.text = "";
         }
 
         protected override void OnHide()
         {
-            _pointers = 0;
+            fingers = 0;
             SetFiring(false);
         }
 
-        void OnTime(float remaining)
+        void SetTime(float remaining)
         {
-            timeText.text = FormatTime(remaining);
-            timeText.color = remaining <= 10f ? Warn : Color.white; // red under 10 s
+            timeText.text = Clock(remaining);
+            timeText.color = remaining <= 10f ? Warning : Color.white;
         }
 
-        void OnHeat(float heat01)
+        void SetHeat(float value)
         {
-            heatFill.fillAmount = heat01;
-            heatFill.color = Game.Player.Heat.IsOverheated ? Hot : Color.Lerp(Cyan, Hot, heat01 * heat01);
+            heatFill.fillAmount = value;
+            heatFill.color = Game.Player.Heat.Overheated ? Hot : Color.Lerp(Cyan, Hot, value * value);
         }
 
-        void OnCharges(int mirrors, int prisms)
+        void SetCharges(int mirrors, int prisms)
         {
-            mirrorButton.gameObject.SetActive(mirrors > 0); // gadget buttons appear once you have a charge
+            mirrorButton.gameObject.SetActive(mirrors > 0);
             prismButton.gameObject.SetActive(prisms > 0);
             mirrorCount.text = mirrors.ToString();
             prismCount.text = prisms.ToString();
@@ -462,33 +517,36 @@ namespace Ricochet
         protected override void OnTick(float dt)
         {
             var p = Game.Player;
-            _vignette = Mathf.MoveTowards(_vignette, 0f, dt * 1.8f);
-            float low = p.IsAlive && p.Health01 < 0.3f ? 0.25f + Mathf.Sin(Time.unscaledTime * 5f) * 0.1f : 0f;
-            damageVignette.alpha = Mathf.Max(_vignette, low);
-            if (!p.IsAlive) deathOverlay.alpha = Mathf.MoveTowards(deathOverlay.alpha, 0.85f, dt * 1.2f); // fade to red on death
-            if (_toast > 0f) { _toast -= dt; toastText.alpha = Mathf.Clamp01(_toast * 2f); }
-            if (p.SpreadBonusRemaining > 0f) spreadText.text = $"{TierNames[p.SpreadTier]} {Mathf.CeilToInt(p.SpreadBonusRemaining)}s";
+            vignette = Mathf.MoveTowards(vignette, 0f, dt * 1.8f);
+            float lowHealth = p.IsAlive && p.HealthPercent < 0.3f ? 0.25f + Mathf.Sin(Time.unscaledTime * 5f) * 0.1f : 0f;
+            damageVignette.alpha = Mathf.Max(vignette, lowHealth);
+            if (!p.IsAlive) deathOverlay.alpha = Mathf.MoveTowards(deathOverlay.alpha, 0.85f, dt * 1.2f);
+            if (toastTimer > 0f)
+            {
+                toastTimer -= dt;
+                toastText.alpha = Mathf.Clamp01(toastTimer * 2f);
+            }
+            if (p.SpreadTimeLeft > 0f)
+                spreadText.text = $"{SpreadNames[p.SpreadLevel]} {Mathf.CeilToInt(p.SpreadTimeLeft)}s";
         }
     }
 
-    /// <summary>Resume / Restart / Main Menu + live pool statistics (proof that nothing is instantiated during play).</summary>
     [Serializable]
     public class PausePanel : UIPanel
     {
         [SerializeField] Button resumeButton, restartButton, menuButton;
         [SerializeField] TMP_Text poolStatsText;
 
-        protected override void OnInitialize()
+        protected override void OnInit()
         {
             resumeButton.onClick.AddListener(Game.Resume);
             restartButton.onClick.AddListener(Game.Restart);
-            menuButton.onClick.AddListener(Game.BackToMenu);
+            menuButton.onClick.AddListener(Game.ShowMenu);
         }
 
-        protected override void OnShow() => poolStatsText.text = PoolRegistry.BuildReport();
+        protected override void OnShow() => poolStatsText.text = Pools.Report();
     }
 
-    /// <summary>SURVIVED / OVERRUN, final score, kills with breakdown, time survived, "New best!", Restart, Main Menu.</summary>
     [Serializable]
     public class EndPanel : UIPanel
     {
@@ -496,23 +554,23 @@ namespace Ricochet
         [SerializeField] GameObject newBestTag;
         [SerializeField] Button restartButton, menuButton;
 
-        protected override void OnInitialize()
+        protected override void OnInit()
         {
             restartButton.onClick.AddListener(Game.Restart);
-            menuButton.onClick.AddListener(Game.BackToMenu);
+            menuButton.onClick.AddListener(Game.ShowMenu);
         }
 
         protected override void OnShow()
         {
-            var r = Game.LastResult;
+            var r = Game.LastRun;
             if (r == null) return;
             titleText.text = r.survived ? "SURVIVED" : "OVERRUN";
             titleText.color = r.survived ? new Color(0.2f, 1f, 1f) : new Color(1f, 0.25f, 0.45f);
             scoreText.text = r.score.ToString("N0");
-            killsText.text = $"{r.enemiesDefeated} enemies defeated";
-            breakdownText.text = $"Walkers {r.walkers}   ·   Spitters {r.spitters}";
-            timeText.text = $"Time survived  {FormatTime(r.timeSurvived)}";
-            newBestTag.SetActive(Game.LastWasNewBest);
+            killsText.text = r.enemiesDefeated + " enemies defeated";
+            breakdownText.text = $"Walkers {r.walkers}   ·   Spitters {r.spitters}   ·   Ghosts {r.ghosts}";
+            timeText.text = "Time survived  " + Clock(r.timeSurvived);
+            newBestTag.SetActive(Game.NewBest);
         }
     }
 }

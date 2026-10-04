@@ -3,14 +3,6 @@ using UnityEngine;
 
 namespace Ricochet
 {
-    /// <summary>
-    /// One pooled projectile class used for both teams:
-    /// - Player laser bolt: reflects off ReflectiveWall/Mirror (Vector3.Reflect, max 3 bounces), splits once in a Prism,
-    ///   deals exactly 1 damage to an Enemy carrying the ricochet score multiplier.
-    /// - Spitter acid glob: hits the player's hurtbox (or splats on walls/floor).
-    /// Movement is a SphereCast from the current position to next frame's position, so it never tunnels through
-    /// thin AR walls and needs no Rigidbody. OnSpawned resets all state for reuse.
-    /// </summary>
     public class Projectile : MonoBehaviour, IPoolable
     {
         public enum Team { Player, Enemy }
@@ -19,34 +11,47 @@ namespace Ricochet
         [SerializeField] LayerMask hitMask;
         [SerializeField] TrailRenderer trail;
         [SerializeField] Color impactColor = new Color(0.3f, 1f, 1f);
+        [SerializeField] Color[] bounceColors =
+        {
+            new Color(0.3f, 1f, 1f),
+            new Color(1f, 0.25f, 0.85f),
+            new Color(1f, 0.8f, 0.2f),
+            new Color(1f, 1f, 1f)
+        };
 
-        const int MaxCastsPerFrame = 5;
+        const int MaxStepsPerFrame = 5;
+        static readonly int ColorId = Shader.PropertyToID("_BaseColor");
 
-        Action<Projectile> _release;
-        Action<Vector3, Vector3, int> _onSplit;
-        WeaponStats _weapon;
-        Vector3 _direction;
-        float _speed, _radius, _damage, _life;
-        int _maxBounces, _mask, _reflectMask, _prismMask;
-        bool _active;
+        Action<Projectile> onReturn;
+        Action<Vector3, Vector3, int, bool> onSplit;
+        WeaponStats weapon;
+        Renderer[] renderers;
+        MaterialPropertyBlock block;
+        Vector3 direction;
+        float speed, radius, damage, life;
+        int maxBounces, mask, mirrorMask, wallMask, prismMask;
+        bool active;
 
         public int Bounces { get; private set; }
-        public bool CanSplit { get; private set; }
+        public bool FromMirror { get; private set; }
 
         void Awake()
         {
-            _reflectMask = LayerMask.GetMask("ReflectiveWall", "Mirror");
-            _prismMask = LayerMask.GetMask("Prism");
+            mirrorMask = LayerMask.GetMask("Mirror");
+            wallMask = LayerMask.GetMask("ReflectiveWall");
+            prismMask = LayerMask.GetMask("Prism");
+            renderers = GetComponentsInChildren<Renderer>();
+            block = new MaterialPropertyBlock();
         }
 
-        public void BindRelease(Action<Projectile> release) => _release = release;
+        public void SetReturn(Action<Projectile> callback) => onReturn = callback;
 
         public void OnSpawned()
         {
             Bounces = 0;
-            CanSplit = false;
-            _mask = hitMask;
-            _active = true;
+            FromMirror = false;
+            mask = hitMask;
+            active = true;
             if (trail)
             {
                 trail.Clear();
@@ -56,107 +61,122 @@ namespace Ricochet
 
         public void OnDespawned()
         {
-            _active = false;
-            _onSplit = null;
+            active = false;
+            onSplit = null;
             if (trail) trail.Clear();
         }
 
-        /// <summary>Player bolt. Split bolts inherit the bounce count and can't split again.</summary>
-        public void LaunchLaser(Vector3 direction, WeaponStats weapon, int bounces, bool canSplit, Action<Vector3, Vector3, int> onSplit)
+        public void FireLaser(Vector3 dir, WeaponStats stats, int bounces, bool fromMirror, bool canSplit, Action<Vector3, Vector3, int, bool> split)
         {
-            _weapon = weapon;
-            _direction = direction.normalized;
-            _speed = weapon.BoltSpeed;
-            _radius = weapon.BoltRadius;
-            _life = weapon.BoltLifetime;
-            _maxBounces = weapon.MaxBounces;
-            _damage = 1f;
+            weapon = stats;
+            direction = dir.normalized;
+            speed = stats.Speed;
+            radius = stats.Radius;
+            life = stats.Lifetime;
+            maxBounces = stats.MaxBounces;
+            damage = 1f;
             Bounces = bounces;
-            CanSplit = canSplit;
-            _onSplit = onSplit;
-            if (!canSplit) _mask &= ~_prismMask;
+            FromMirror = fromMirror;
+            onSplit = split;
+            if (!canSplit) mask &= ~prismMask;
+            SetColor(bounceColors[Mathf.Min(Bounces, bounceColors.Length - 1)]);
         }
 
-        /// <summary>Enemy acid glob.</summary>
-        public void LaunchAcid(Vector3 direction, float speed, float damage)
+        public void FireAcid(Vector3 dir, float shotSpeed, float shotDamage)
         {
-            _weapon = null;
-            _direction = direction.normalized;
-            _speed = speed;
-            _radius = 0.06f;
-            _life = 4f;
-            _maxBounces = 0;
-            _damage = damage;
+            weapon = null;
+            direction = dir.normalized;
+            speed = shotSpeed;
+            radius = 0.06f;
+            life = 4f;
+            maxBounces = 0;
+            damage = shotDamage;
+        }
+
+        void SetColor(Color c)
+        {
+            foreach (var r in renderers)
+            {
+                r.GetPropertyBlock(block);
+                block.SetColor(ColorId, c);
+                r.SetPropertyBlock(block);
+            }
+            if (trail)
+            {
+                trail.startColor = c;
+                trail.endColor = new Color(c.r, c.g, c.b, 0f);
+            }
         }
 
         void Update()
         {
-            if (!_active) return;
+            if (!active) return;
             float dt = Time.deltaTime;
-            float remaining = _speed * dt;
+            float distance = speed * dt;
             Vector3 pos = transform.position;
 
-            for (int i = 0; i < MaxCastsPerFrame && remaining > 0f; i++)
+            for (int i = 0; i < MaxStepsPerFrame && distance > 0f; i++)
             {
-                if (!Physics.SphereCast(pos, _radius, _direction, out RaycastHit hit, remaining, _mask, QueryTriggerInteraction.Ignore))
+                if (!Physics.SphereCast(pos, radius, direction, out RaycastHit hit, distance, mask, QueryTriggerInteraction.Ignore))
                 {
-                    pos += _direction * remaining;
+                    pos += direction * distance;
                     break;
                 }
 
-                Vector3 centreAtHit = pos + _direction * hit.distance;
-                remaining -= hit.distance;
-                int layerBit = 1 << hit.collider.gameObject.layer;
+                Vector3 centre = pos + direction * hit.distance;
+                distance -= hit.distance;
+                int layer = 1 << hit.collider.gameObject.layer;
 
-                // Laser hits a wall or mirror: bounce.
-                if (team == Team.Player && (layerBit & _reflectMask) != 0)
+                if (team == Team.Player && (layer & (wallMask | mirrorMask)) != 0)
                 {
-                    Vector3 normal = Vector3.Dot(hit.normal, _direction) > 0f ? -hit.normal : hit.normal;
-                    _direction = Vector3.Reflect(_direction, normal).normalized;
+                    Vector3 normal = Vector3.Dot(hit.normal, direction) > 0f ? -hit.normal : hit.normal;
+                    direction = Vector3.Reflect(direction, normal).normalized;
                     Bounces++;
-                    Vfx.Sparks(hit.point, normal, impactColor, 8);
+                    if ((layer & mirrorMask) != 0) FromMirror = true;
+
+                    Color c = bounceColors[Mathf.Min(Bounces, bounceColors.Length - 1)];
+                    SetColor(c);
+                    Vfx.Sparks(hit.point, normal, c, 10);
                     AudioManager.Instance?.PlayAt(SoundId.LaserBounce, hit.point);
-                    if (Bounces > _maxBounces)
+
+                    if (Bounces > maxBounces)
                     {
-                        Despawn();
+                        Finish();
                         return;
                     }
-                    pos = centreAtHit + normal * 0.002f;
+                    pos = centre + normal * 0.002f;
                     continue;
                 }
 
-                // Laser passes through a prism: split once.
-                if (team == Team.Player && (layerBit & _prismMask) != 0)
+                if (team == Team.Player && (layer & prismMask) != 0)
                 {
-                    CanSplit = false;
-                    _mask &= ~_prismMask;
-                    _onSplit?.Invoke(centreAtHit, _direction, Bounces);
-                    Vfx.Sparks(hit.point, -_direction, new Color(1f, 0.5f, 1f), 12);
-                    pos = centreAtHit;
+                    mask &= ~prismMask;
+                    onSplit?.Invoke(centre, direction, Bounces, FromMirror);
+                    Vfx.Sparks(hit.point, -direction, new Color(1f, 0.5f, 1f), 12);
+                    pos = centre;
                     continue;
                 }
 
-                // Anything damageable (enemy for lasers, player hurtbox for acid).
                 var target = hit.collider.GetComponentInParent<IDamageable>();
                 if (target != null && target.IsAlive)
                 {
-                    float multiplier = _weapon != null ? _weapon.MultiplierForBounces(Bounces) : 1f;
-                    target.TakeDamage(new DamageInfo(_damage, hit.point, _direction, multiplier));
+                    float multiplier = weapon != null ? weapon.Multiplier(Bounces) : 1f;
+                    target.TakeDamage(new Hit(damage, hit.point, direction, multiplier, FromMirror));
                 }
 
                 Vfx.Sparks(hit.point, hit.normal, impactColor, 8, 0.8f);
-                Despawn();
+                Finish();
                 return;
             }
 
-            transform.SetPositionAndRotation(pos, Quaternion.LookRotation(_direction));
-            _life -= dt;
-            if (_life <= 0f) Despawn();
+            transform.SetPositionAndRotation(pos, Quaternion.LookRotation(direction));
+            life -= dt;
+            if (life <= 0f) Finish();
         }
 
-        void Despawn()
+        void Finish()
         {
-            if (_active) _release?.Invoke(this);
+            if (active) onReturn?.Invoke(this);
         }
     }
 }

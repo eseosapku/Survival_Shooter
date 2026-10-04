@@ -21,11 +21,11 @@ Author: Eseosa Kay-Uwagboe Pascal
 
 | # | File | Unity component / asset | Plain C# classes inside |
 |---|---|---|---|
-| 1 | `GameManager.cs` | `GameManager` (Singleton) | `GameStateMachine`, `IGameState`, `GameStateBase`, 7 states, `RoundTimer`, `ScoreSystem`, `GameEvents`, `IDamageable`, `DamageInfo`, `SessionResult`, `LeaderboardService`, `GameSettings`, `Vfx`, `UIHitTest` |
+| 1 | `GameManager.cs` | `GameManager` (Singleton) | `StateMachine`, `IGameState`, `GameState`, 9 states, `RoundTimer`, `Score`, `GameEvents`, `IDamageable`, `Hit`, `RunResult`, `Leaderboard`, `Settings`, `Vfx`, `TouchUI` |
 | 2 | `GameConfig.cs` | `GameConfig` (ScriptableObject) | `DifficultySettings`, `EnemyStats`, `WeaponStats`, `CardSettings`, `SoundEntry`, `SoundId` |
-| 3 | `ObjectPool.cs` | – | `ObjectPool<T>`, `IPoolable`, `PoolRegistry` |
+| 3 | `ObjectPool.cs` | – | `ObjectPool<T>`, `IPoolable`, `Pools` |
 | 4 | `ARController.cs` | `ARController` | `Arena` |
-| 5 | `Player.cs` | `Player` (IDamageable) | `HeatSystem` |
+| 5 | `Player.cs` | `Player` (IDamageable) | `Heat` |
 | 6 | `Projectile.cs` | `Projectile` (IPoolable) | – |
 | 7 | `Enemy.cs` | `Enemy` (IPoolable, IDamageable) | `EnemyAI` (abstract), `WalkerAI`, `SpitterAI`, `EnemyFactory`, `EnemySpawner`, `EnemyContext` |
 | 8 | `CardSystem.cs` | – | `AbilityCard` (abstract) + 5 cards, `CardSystem`, `PlayerContext` |
@@ -43,9 +43,9 @@ Author: Eseosa Kay-Uwagboe Pascal
 | Principle | Where |
 |---|---|
 | **Encapsulation** | Tuning values are `private [SerializeField]` fields with read-only properties (`GameConfig`, `DifficultySettings`, `EnemyStats`...). State changes only happen through methods (`TakeDamage`, `Heal`, `AddPoints`). |
-| **Abstraction** | `EnemyAI`, `AbilityCard`, `UIPanel`, `GameStateBase` (abstract classes); `IGameState`, `IPoolable`, `IDamageable` (interfaces) |
-| **Inheritance** | `WalkerAI`/`SpitterAI : EnemyAI`; `MultiShotCard`, `MirrorCard`, `PrismCard`, `FreezeCard`, `MedKitCard : AbilityCard`; 7 panels `: UIPanel`; 7 states `: GameStateBase` |
-| **Polymorphism** | `Enemy` calls `_ai.Tick()`, which does melee or ranged behaviour. `CardSystem` calls `card.Activate()`. Projectiles call `IDamageable.TakeDamage()` the same way on the player and on enemies. The state machine calls `Enter/Tick/Exit` on whichever state is current. |
+| **Abstraction** | `EnemyAI`, `AbilityCard`, `UIPanel`, `GameState` (abstract classes); `IGameState`, `IPoolable`, `IDamageable` (interfaces) |
+| **Inheritance** | `WalkerAI`/`SpitterAI : EnemyAI`; `MultiShotCard`, `MirrorCard`, `PrismCard`, `FreezeCard`, `MedKitCard : AbilityCard`; 7 panels `: UIPanel`; 9 states `: GameState` |
+| **Polymorphism** | `Enemy` calls `ai.Tick()`, which does melee or ranged behaviour. `CardSystem` calls `card.Activate()`. Projectiles call `IDamageable.TakeDamage()` the same way on the player and on enemies. The state machine calls `Enter/Tick/Exit` on whichever state is current. |
 
 ## Design patterns
 
@@ -53,9 +53,9 @@ Author: Eseosa Kay-Uwagboe Pascal
 |---|---|---|
 | **Object Pool** | `ObjectPool<T>`: laser bolts (40), acid (20), Walkers (12), Spitters (12), cards (2 per type), mirrors/prisms (4), floating text (12), plus 10 pooled 3D audio sources | No Instantiate/Destroy during play, so no garbage-collection stutter. `OnSpawned` resets all state. The pause screen shows "grown 0" as proof. |
 | **Singleton** | `GameManager`, `AudioManager` (duplicates destroy themselves) | One global access point |
-| **State** | `GameStateMachine` + 7 `IGameState` classes | Each phase turns its own systems on in `Enter` and off in `Exit` |
-| **Factory** | `EnemyFactory.Create(EnemyType, position)`; `EnemyAI.Create(type)` | Callers never see prefabs or pools |
-| **Observer** | C# events: `Player.HealthChanged/Damaged/Died`, `ScoreSystem.ScoreChanged/PointsAwarded`, `RoundTimer.TimeChanged`, `HeatSystem.HeatChanged`, `GameEvents.EnemyKilled`, `ARController.ArenaPlaced/WallCountChanged`, `GameStateMachine.StateChanged` | The UI only listens, so gameplay never references UI |
+| **State** | `StateMachine` + 7 `IGameState` classes | Each phase turns its own systems on in `Enter` and off in `Exit` |
+| **Factory** | `EnemyFactory.Create(EnemyType, position)`; `EnemyAI.Create(type, enemy)` | Callers never see prefabs or pools |
+| **Observer** | C# events: `Player.HealthChanged/Damaged/Died`, `Score.Changed/Gained`, `RoundTimer.Changed`, `Heat.Changed`, `GameEvents.EnemyKilled`, `ARController.ArenaPlaced/WallsChanged`, `StateMachine.States.Changed` | The UI only listens, so gameplay never references UI |
 | **Data-driven** | `GameConfig` ScriptableObject | Balance changes need no code |
 
 ---
@@ -128,7 +128,7 @@ Author: Eseosa Kay-Uwagboe Pascal
 - At game over, everything returns to its pool.
 
 ### Leaderboard
-- `SessionResult` is `[Serializable]` and wrapped for `JsonUtility`, saved to `persistentDataPath/leaderboard.json`.
+- `RunResult` is `[Serializable]` and wrapped for `JsonUtility`, saved to `persistentDataPath/leaderboard.json`.
 - New results are inserted at the front and the list is trimmed to the **latest** 5.
 - A missing or corrupt file gives an empty board.
 - The best score is kept in PlayerPrefs for the "NEW BEST!" tag.
@@ -160,7 +160,7 @@ Author: Eseosa Kay-Uwagboe Pascal
 
 ### UI (`UIManager`)
 - One Screen Space Overlay canvas (1080×1920, match 0.5) with a SafeArea.
-- `UIManager` shows exactly one panel per state (it observes `StateChanged`) and adds a click sound to every button.
+- `UIManager` shows exactly one panel per state (it observes `States.Changed`) and adds a click sound to every button.
 - The menus dim the camera feed only lightly, so the real room stays visible.
 - The fire button uses Unity's built-in `EventTrigger` for hold-to-fire.
 
@@ -175,3 +175,41 @@ Author: Eseosa Kay-Uwagboe Pascal
 | F4 | win |
 | F5 | die |
 | Right mouse + WASD | move the XR Simulation camera |
+
+---
+
+## Update: mirror setup, colour-changing lasers, Ghost enemy, How To Play
+
+### Mirror setup phase (`SetupState`, `CardSystem.PlaceSetupMirror`)
+- New state between Scanning and Countdown. The player walks around the real room and taps to place up to **3 mirrors** (`GameConfig.cards.setupMirrors`):
+  - tap the **floor**: a standing mirror appears, facing the player;
+  - tap a **detected wall**: the mirror is placed flat on the wall, along the wall's surface normal.
+- `ARController.Tapped` reports taps that are not on UI. `SetupState` forwards them to `CardSystem`, which ray-casts from the camera through the tap point onto the `ARFloor` and `ReflectiveWall` layers.
+- Setup mirrors stay for the whole round and for restarts. **CLEAR** removes them and **START** begins the countdown.
+
+### Colour-changing lasers (`Projectile`)
+- Each bounce changes the bolt's colour: cyan → magenta → gold → white.
+- The core, glow and trail are recoloured through a `MaterialPropertyBlock` and the trail's start/end colours.
+- A bolt that reflects off a **Mirror** sets `FromMirror = true`, which is passed to enemies in `Hit.FromMirror`. Prism split bolts inherit it.
+
+### Ghost enemy (`GhostAI : WalkerAI`)
+- A purple, floating melee enemy with 2 hits, 0.35 m/s speed, 12 damage and 250 points.
+- `EnemyAI.CanBeHurtBy(Hit)` is virtual: Walkers and Spitters accept every hit, while `GhostAI` overrides it to accept **only hits from bolts that bounced off a mirror**. This is polymorphism plus a second level of inheritance (`EnemyAI` → `WalkerAI` → `GhostAI`).
+- A blocked hit shows purple sparks and a "MIRROR SHOTS ONLY!" popup (`GameEvents.HitBlocked`, observed by the UI).
+- Ghosts only spawn once at least one mirror exists (`CardSystem.HasMirrors`), so they are never impossible to kill.
+
+| Difficulty | Easy | Normal | Hard |
+|---|---|---|---|
+| Ghost chance per spawn | 10% | 15% | 20% |
+
+### How To Play screen
+- A new **HOW TO PLAY** button on the main menu opens `InstructionsPanel` (`InstructionsState`).
+- It explains the goal, setup, shooting and ricochets, the three enemy types, the cards and a tip.
+
+### Code style
+- All 10 scripts have no comments and use short method names, for example:
+  - `ObjectPool.Get` / `Return` / `ReturnAll`
+  - `GameManager.ResetRound` / `ClearBoard` / `EnableCombat`
+  - `Player.SetFiring` / `AddSpread` / `Respawn`
+  - `Enemy.MoveToPlayer` / `LookAtPlayer` / `Slow`
+  - `Arena.ToFloor` / `InRange`

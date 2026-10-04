@@ -25,9 +25,9 @@ classDiagram
         +Restart()
         +EndRound()
     }
-    class GameStateMachine {
+    class StateMachine {
         +ChangeState()
-        +StateChanged
+        +States.Changed
     }
     class IGameState {
         <<interface>>
@@ -35,8 +35,8 @@ classDiagram
         Tick()
         Exit()
     }
-    GameManager --> GameStateMachine
-    GameStateMachine --> IGameState
+    GameManager --> StateMachine
+    StateMachine --> IGameState
     IGameState <|.. MainMenuState
     IGameState <|.. ScanningState
     IGameState <|.. CountdownState
@@ -59,6 +59,7 @@ classDiagram
     Enemy --> EnemyAI
     EnemyAI <|-- WalkerAI
     EnemyAI <|-- SpitterAI
+    WalkerAI <|-- GhostAI
 
     GameManager --> CardSystem
     class AbilityCard {
@@ -82,7 +83,7 @@ classDiagram
     UIPanel <|-- HUDPanel
     UIPanel <|-- EndPanel
     UIPanel <|-- LeaderboardPanel
-    UIManager ..> GameStateMachine : observes
+    UIManager ..> StateMachine : observes
 
     class IDamageable {
         <<interface>>
@@ -94,18 +95,18 @@ classDiagram
     GameManager ..> GameConfig : reads
 ```
 
-Flow: **MainMenu → Scanning** (first time only) **→ Countdown → Playing ⇄ Paused → GameOver → MainMenu / Countdown**.
+Flow: **MainMenu (→ HowToPlay / Leaderboard) → Scanning** (first time only) **→ Setup (place mirrors) → Countdown → Playing ⇄ Paused → GameOver → Setup / MainMenu**.
 
 ## 3. OOP
 - **Encapsulation:** private serialized fields exposed through read-only properties. State changes only through methods.
 - **Abstraction:**
-  - abstract classes: `EnemyAI`, `AbilityCard`, `UIPanel`, `GameStateBase`
+  - abstract classes: `EnemyAI`, `AbilityCard`, `UIPanel`, `GameState`
   - interfaces: `IGameState`, `IPoolable`, `IDamageable`
 - **Inheritance:**
   - `WalkerAI`/`SpitterAI : EnemyAI`
   - 5 cards `: AbilityCard`
   - 7 panels `: UIPanel`
-  - 7 states `: GameStateBase`
+  - 9 states `: GameState`
 - **Polymorphism:**
   - `Enemy` calls `EnemyAI.Tick()`: melee vs ranged behaviour.
   - `CardSystem` calls `AbilityCard.Activate()`.
@@ -117,8 +118,8 @@ Flow: **MainMenu → Scanning** (first time only) **→ Countdown → Playing �
 |---|---|---|
 | Object Pool | `ObjectPool<T>` | No allocations or Instantiate during play (required for projectiles) |
 | Singleton | `GameManager`, `AudioManager` | One global access point; duplicates destroy themselves |
-| State | `GameStateMachine` + 7 states | Each phase switches its systems on and off cleanly |
-| Factory | `EnemyFactory.Create(type, pos)`, `EnemyAI.Create(type)` | Callers don't know about prefabs or pools |
+| State | `StateMachine` + 9 states | Each phase switches its systems on and off cleanly |
+| Factory | `EnemyFactory.Create(type, pos)`, `EnemyAI.Create(type, enemy)` | Callers don't know about prefabs or pools |
 | Observer | C# events (health, score, timer, heat, state, arena placed, enemy killed) | UI listens; gameplay never references UI |
 | Data-driven | `GameConfig` ScriptableObject | Difficulty and balance without code changes |
 
@@ -129,9 +130,9 @@ Flow: **MainMenu → Scanning** (first time only) **→ Countdown → Playing �
   2. Positions and activates it.
   3. Adds it to the active list.
   4. Calls `IPoolable.OnSpawned()`.
-- **Release(item):** calls `OnDespawned()`, deactivates the item and pushes it back. Double releases are ignored.
-- **ReleaseAll()** wipes the board at game end.
-- An empty pool grows by one and logs a warning. `PoolRegistry` shows `active/total, grown` on the pause screen.
+- **Return(item):** calls `OnDespawned()`, deactivates the item and pushes it back. Double releases are ignored.
+- **ReturnAll()** wipes the board at game end.
+- An empty pool grows by one and logs a warning. `Pools` shows `active/total, grown` on the pause screen.
 - Reset on reuse:
   - **Projectile:** bounce count, hit mask, split flag, lifetime, `TrailRenderer.Clear()`.
   - **Enemy:** health, rise animation, cooldown, slow effect, knockback, collider, hit flash, AI state.
@@ -162,10 +163,10 @@ Flow: **MainMenu → Scanning** (first time only) **→ Countdown → Playing �
 
 | Required sound | Trigger |
 |---|---|
-| Player shoot | `Player.Fire` |
+| Player shoot | `Player.Shoot` |
 | Player death | `Player.TakeDamage` → health reaches 0 |
 | Enemy spawn | `EnemyFactory.Create` (3D) |
 | Enemy shoot | `SpitterAI.Attack` (3D) |
-| Enemy damage (melee) | `WalkerAI.LandHit` |
+| Enemy damage (melee) | `WalkerAI.Strike` |
 
 **Sources:** all clips were procedurally synthesized for this project. They are original work with no third-party licence.
